@@ -2,16 +2,22 @@ import { useState } from "react"
 import FormEstudiante from "./components/FormEstudiante"
 import PreguntasScreen from "./components/PreguntasScreen"
 import AdminDashboard from "./components/AdminDashboard"
+import AdminLogin from "./components/admin/AdminLogin"
 
 function App() {
   const [estudiante, setEstudiante] = useState<any>(null)
 
-  const isAdmin = window.location.pathname === "/admin"
+  const path = window.location.pathname
 
-  if (isAdmin) {
+  if (path === "/admin/login") {
+    return <AdminLogin />
+  }
+
+  if (path.startsWith("/admin")) {
     return <AdminDashboard />
   }
 
+  // APP ALUMNOS
   if (!estudiante) {
     return <FormEstudiante onSuccess={setEstudiante} />
   }
