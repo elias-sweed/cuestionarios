@@ -221,7 +221,7 @@ export default function AdminDashboard() {
                 cx="50%"
                 cy="50%"
                 outerRadius={120}
-                label={(props: { name: string; percent?: number }) => `${props.name} ${((props.percent ?? 0) * 100).toFixed(0)}%`}
+                label={(props: { name?: string; percent?: number }) => `${props.name || ""} ${((props.percent ?? 0) * 100).toFixed(0)}%`}
               >
                 {emociones.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
