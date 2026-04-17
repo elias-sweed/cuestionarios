@@ -5,7 +5,7 @@ import PreguntaAbierta from "./PreguntaAbierta"
 
 interface Props {
   pregunta: Pregunta
-  onResponder: (valor: any) => void
+  onResponder: (valor: string) => void // Cambiamos de any a string
 }
 
 export default function PreguntaRenderer({ pregunta, onResponder }: Props) {
@@ -21,6 +21,10 @@ export default function PreguntaRenderer({ pregunta, onResponder }: Props) {
       return <PreguntaAbierta pregunta={pregunta} onResponder={onResponder} />
 
     default:
-      return <p>Tipo no soportado</p>
+      return (
+        <div className="p-4 bg-yellow-50 text-yellow-700 rounded-xl border border-yellow-200 text-center">
+          Tipo de pregunta no soportado: {pregunta.tipo}
+        </div>
+      )
   }
 }

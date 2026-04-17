@@ -3,9 +3,11 @@ import FormEstudiante from "./components/FormEstudiante"
 import PreguntasScreen from "./components/PreguntasScreen"
 import AdminDashboard from "./components/AdminDashboard"
 import AdminLogin from "./components/admin/AdminLogin"
+import type { Estudiante } from "./types" // Importamos tu interfaz
 
 function App() {
-  const [estudiante, setEstudiante] = useState<any>(null)
+  // Reemplazamos <any> por <Estudiante | null>
+  const [estudiante, setEstudiante] = useState<Estudiante | null>(null)
 
   const path = window.location.pathname
 

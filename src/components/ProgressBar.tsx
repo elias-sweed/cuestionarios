@@ -7,16 +7,19 @@ export default function ProgressBar({ actual, total }: Props) {
   const porcentaje = Math.round((actual / total) * 100)
 
   return (
-    <div className="w-full space-y-1">
-      <div className="w-full bg-gray-200 rounded-full h-3">
+    <div className="w-full flex items-center gap-4">
+      <div className="flex-1 bg-gray-100 rounded-full h-2.5 overflow-hidden">
         <div
-          className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+          className="bg-blue-600 h-full rounded-full transition-all duration-500 ease-out relative"
           style={{ width: `${porcentaje}%` }}
-        />
+        >
+          {/* Brillo sutil en la barra */}
+          <div className="absolute top-0 right-0 bottom-0 w-10 bg-white/20 blur-sm rounded-full"></div>
+        </div>
       </div>
-      <p className="text-sm text-gray-600 text-right">
+      <span className="text-xs font-bold text-blue-600 min-w-[3ch] text-right">
         {porcentaje}%
-      </p>
+      </span>
     </div>
   )
 }

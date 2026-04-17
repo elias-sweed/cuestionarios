@@ -12,7 +12,7 @@ export default function PreguntaEmocion({ pregunta, onResponder }: Props) {
 
   const handleContinuar = () => {
     if (!seleccion) {
-      setError("Selecciona una emoción")
+      setError("Por favor, selecciona cómo te sientes.")
       return
     }
 
@@ -21,22 +21,36 @@ export default function PreguntaEmocion({ pregunta, onResponder }: Props) {
   }
 
   return (
-    <div className="space-y-4 text-center">
-      <div className="flex justify-center gap-4 text-4xl">
+    <div className="space-y-6 text-center">
+      <div className="flex flex-wrap justify-center gap-4">
         {pregunta.opciones?.map((emoji) => (
           <button
             key={emoji}
-            onClick={() => setSeleccion(emoji)}
-            className={seleccion === emoji ? "scale-125" : ""}
+            onClick={() => {
+              setSeleccion(emoji)
+              setError("")
+            }}
+            className={`text-5xl p-4 rounded-2xl transition-all duration-200 ${
+              seleccion === emoji 
+                ? "bg-blue-100 scale-110 shadow-inner" 
+                : "bg-gray-50 hover:bg-gray-100 hover:scale-110 opacity-80 hover:opacity-100"
+            }`}
           >
             {emoji}
           </button>
         ))}
       </div>
 
-      {error && <p className="text-red-500">{error}</p>}
+      {error && (
+        <div className="p-3 bg-red-50 text-red-600 text-sm font-medium rounded-lg border border-red-100 flex items-center gap-2 justify-center">
+          <span>⚠️</span> {error}
+        </div>
+      )}
 
-      <button onClick={handleContinuar} className="bg-green-600 text-white px-4 py-2 rounded-xl">
+      <button 
+        onClick={handleContinuar} 
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-xl transition-all duration-200 shadow-md shadow-blue-600/20"
+      >
         Continuar
       </button>
     </div>
