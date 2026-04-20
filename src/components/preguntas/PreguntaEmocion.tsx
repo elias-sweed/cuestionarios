@@ -20,10 +20,15 @@ export default function PreguntaEmocion({ pregunta, onResponder }: Props) {
     onResponder(seleccion)
   }
 
+  // SALVAVIDAS: Si Supabase manda NULL, ponemos estas 3 caritas por defecto
+  const opcionesSeguras = pregunta.opciones && pregunta.opciones.length > 0 
+    ? pregunta.opciones 
+    : ["😄", "😐", "😢"]
+
   return (
     <div className="space-y-6 text-center">
       <div className="flex flex-wrap justify-center gap-4">
-        {pregunta.opciones?.map((emoji) => (
+        {opcionesSeguras.map((emoji) => (
           <button
             key={emoji}
             onClick={() => {

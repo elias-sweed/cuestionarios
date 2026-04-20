@@ -20,10 +20,15 @@ export default function PreguntaOpcion({ pregunta, onResponder }: Props) {
     onResponder(seleccion)
   }
 
+  // SALVAVIDAS: Si Supabase manda NULL o vacío, usamos "Sí" y "No" por defecto
+  const opcionesSeguras = pregunta.opciones && pregunta.opciones.length > 0 
+    ? pregunta.opciones 
+    : ["Sí", "No"]
+
   return (
     <div className="space-y-6">
       <div className="grid gap-3">
-        {pregunta.opciones?.map((op) => (
+        {opcionesSeguras.map((op) => (
           <button
             key={op}
             onClick={() => {

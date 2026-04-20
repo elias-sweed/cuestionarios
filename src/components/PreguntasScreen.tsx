@@ -67,7 +67,7 @@ export default function PreguntasScreen({ estudiante }: Props) {
     )
   }
 
-  // ESTADO: Finalizado
+// ESTADO: Finalizado
   if (index >= preguntas.length) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -76,7 +76,14 @@ export default function PreguntasScreen({ estudiante }: Props) {
             ✅
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">¡Cuestionario Terminado!</h2>
-          <p className="text-gray-600">Gracias por tus respuestas, {estudiante.nombres}. Ya puedes cerrar esta ventana.</p>
+          <p className="text-gray-600 mb-8">Gracias por tus respuestas, {estudiante.nombres}.</p>
+          
+          <button 
+            onClick={() => window.location.reload()} 
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-xl transition-all duration-200 shadow-md shadow-blue-600/20"
+          >
+            Siguiente alumno 🔄
+          </button>
         </div>
       </div>
     )

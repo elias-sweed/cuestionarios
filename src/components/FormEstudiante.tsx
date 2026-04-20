@@ -16,21 +16,45 @@ export default function FormEstudiante({ onSuccess }: Props) {
 
   const [loading, setLoading] = useState(false)
 
-  // Tipado correcto para soportar tanto inputs de texto como selects
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({
       ...form,
       [e.target.name]: e.target.value
     })
   }
 
+  const handleSelection = (field: "grado" | "seccion", value: string) => {
+    // Si elige Inicial ("0"), le asignamos "Única" por defecto para que la BD no moleste
+    if (field === "grado" && value === "0") {
+      setForm({ ...form, grado: "0", seccion: "Única" })
+    } 
+    // Si elige otro grado de primaria, limpiamos la sección para que la elija
+    else if (field === "grado" && value !== "0") {
+      setForm({ ...form, grado: value, seccion: "" })
+    } 
+    else {
+      setForm({ ...form, [field]: value })
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // 🔥 AQUÍ ESTÁ LA MAGIA: Ya no te bloquea si es Inicial
+    if (!form.grado) {
+      alert("Por favor, selecciona un grado.")
+      return
+    }
+    if (form.grado !== "0" && !form.seccion) {
+      alert("Por favor, selecciona una sección para Primaria.")
+      return
+    }
+
     setLoading(true)
 
     try {
       const estudiante = await crearEstudiante(form)
-      onSuccess(estudiante) // 🔥 importante
+      onSuccess(estudiante)
     } catch (error) {
       console.error(error)
       alert("Error al guardar los datos del estudiante")
@@ -38,6 +62,9 @@ export default function FormEstudiante({ onSuccess }: Props) {
       setLoading(false)
     }
   }
+
+  const gradosPrimaria = ["1", "2", "3", "4", "5", "6"]
+  const secciones = ["A", "B", "C", "D", "E", "F"]
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50 p-4">
@@ -53,7 +80,7 @@ export default function FormEstudiante({ onSuccess }: Props) {
           <p className="text-sm text-gray-500">Ingresa tu información para comenzar</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700 ml-1">Nombres</label>
             <input
@@ -78,47 +105,63 @@ export default function FormEstudiante({ onSuccess }: Props) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700 ml-1">Grado</label>
-              {/* Cambiado a Select por UX: evita errores de escritura en la BD */}
-              <select
-                name="grado"
-                required
-                value={form.grado}
-                onChange={handleChange}
-                className="w-full border border-gray-200 bg-gray-50 p-3.5 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-700"
-              >
-                <option value="" disabled>Elige...</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-              </select>
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 ml-1">Grado</label>
+            
+            {/* BOTÓN ESPECIAL PARA INICIAL */}
+            <button
+              type="button"
+              onClick={() => handleSelection("grado", "0")}
+              className={`w-full py-3 mb-2 rounded-xl font-bold transition-all duration-200 ${
+                form.grado === "0"
+                  ? "bg-pink-500 text-white shadow-md shadow-pink-500/30 border-transparent"
+                  : "bg-pink-50 text-pink-600 border border-pink-200 hover:bg-pink-100 hover:border-pink-300"
+              }`}
+            >
+              Inicial (5 Años) 🎈
+            </button>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-700 ml-1">Sección</label>
-              {/* Cambiado a Select por UX */}
-              <select
-                name="seccion"
-                required
-                value={form.seccion}
-                onChange={handleChange}
-                className="w-full border border-gray-200 bg-gray-50 p-3.5 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-700"
-              >
-                <option value="" disabled>Elige...</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-                <option value="E">E</option>
-                <option value="F">F</option>
-              </select>
+            {/* BOTONES PARA PRIMARIA */}
+            <div className="grid grid-cols-6 gap-2">
+              {gradosPrimaria.map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => handleSelection("grado", g)}
+                  className={`py-3 rounded-xl font-bold transition-all duration-200 ${
+                    form.grado === g
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/30 border-transparent"
+                      : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-blue-50 hover:border-blue-200"
+                  }`}
+                >
+                  {g}°
+                </button>
+              ))}
             </div>
           </div>
+
+          {/* 🔥 ESTO SE OCULTA MÁGICAMENTE SI ELIGE INICIAL */}
+          {form.grado !== "0" && form.grado !== "" && (
+            <div className="space-y-2 animate-fade-in">
+              <label className="text-sm font-medium text-gray-700 ml-1">Sección</label>
+              <div className="grid grid-cols-6 gap-2">
+                {secciones.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => handleSelection("seccion", s)}
+                    className={`py-3 rounded-xl font-bold transition-all duration-200 ${
+                      form.seccion === s
+                        ? "bg-blue-600 text-white shadow-md shadow-blue-600/30 border-transparent"
+                        : "bg-gray-50 text-gray-600 border border-gray-200 hover:bg-blue-50 hover:border-blue-200"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <button

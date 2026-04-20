@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react"
 import { supabase } from "../lib/supabaseClient"
 import { getRespuestasDashboard } from "../services/dashboard.service"
+import { logout } from "../services/auth.service"
 import {
   agruparPorGrado,
   agruparPorSeccion,
@@ -65,14 +66,26 @@ export default function AdminDashboard() {
   const [analisis, setAnalisis] = useState<AnalisisData[]>([])
   const [alumnosRiesgo, setAlumnosRiesgo] = useState<AlumnoRiesgoData[]>([])
 
-  const dataFiltrada = useMemo(() => {
+  // BONUS: función cargar reutilizable en ambos useEffect
+  const cargar = async () => {
+    try {
+      const res = await getRespuestasDashboard()
+      setData(res)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+const dataFiltrada = useMemo(() => {
     return data.filter((item) => {
       const estudianteInfo = Array.isArray(item.estudiantes) ? item.estudiantes[0] : item.estudiantes
-      const grado = estudianteInfo?.grado != null ? String(estudianteInfo.grado) : ""
-      const seccion = estudianteInfo?.seccion || ""
+      
+      const grado = estudianteInfo?.grado != null ? String(estudianteInfo.grado).trim() : ""
+      const seccion = estudianteInfo?.seccion ? String(estudianteInfo.seccion).trim().toUpperCase() : ""
 
-      const pasaGrado = gradoFiltro === "todos" || grado === gradoFiltro
-      const pasaSeccion = seccionFiltro === "todos" || seccion === seccionFiltro
+      // Hacemos lo mismo con los filtros para que coincidan perfecto
+      const pasaGrado = gradoFiltro === "todos" || grado === String(gradoFiltro).trim()
+      const pasaSeccion = seccionFiltro === "todos" || seccion === String(seccionFiltro).trim().toUpperCase()
 
       return pasaGrado && pasaSeccion
     })
@@ -81,16 +94,31 @@ export default function AdminDashboard() {
   const porGrado = useMemo(() => agruparPorGrado(dataFiltrada), [dataFiltrada])
   const porSeccion = useMemo(() => agruparPorSeccion(dataFiltrada), [dataFiltrada])
 
+  // useEffect original de carga inicial
   useEffect(() => {
-    const cargar = async () => {
-      try {
-        const res = await getRespuestasDashboard()
-        setData(res)
-      } catch (err) {
-        console.error(err)
-      }
-    }
     cargar()
+  }, [])
+
+  // OPCIÓN 2 — TIEMPO REAL
+  useEffect(() => {
+    const channel = supabase
+      .channel("realtime-respuestas")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "respuestas",
+        },
+        () => {
+          cargar()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   useEffect(() => {
@@ -99,9 +127,10 @@ export default function AdminDashboard() {
     setAlumnosRiesgo(detectarAlumnosRiesgo(dataFiltrada))
   }, [dataFiltrada])
 
+  // ✅ Solo este cambio: ahora te lleva al inicio
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    window.location.href = "/"
+    await logout()
+    window.location.replace("/")
   }
 
   return (
@@ -135,6 +164,9 @@ export default function AdminDashboard() {
               className="w-full min-w-[140px] border border-gray-200 bg-gray-50 rounded-xl px-4 py-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm"
             >
               <option value="todos">Todos los grados</option>
+              {/* AÑADE ESTA LÍNEA AQUÍ ABAJO */}
+              <option value="0">Inicial (5 años)</option> 
+              
               {[1, 2, 3, 4, 5, 6].map((g) => (
                 <option key={g} value={String(g)}>
                   {g}° Grado
@@ -302,9 +334,20 @@ export default function AdminDashboard() {
             </tbody>
           </table>
           
-          {alumnosRiesgo.length === 0 && (
+{/* Si filtras y no existe NINGÚN alumno en ese grado o sección */}
+          {dataFiltrada.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-              <span className="text-4xl mb-3">✅</span>
+              <span className="text-5xl mb-3">📭</span>
+              <p className="text-lg font-medium text-gray-700">No hay alumnos registrados todavía.</p>
+              <p>Prueba seleccionando otro Grado o Sección.</p>
+            </div>
+          )}
+
+          {/* Si SÍ hay alumnos, pero felizmente NINGUNO está en riesgo */}
+          {dataFiltrada.length > 0 && alumnosRiesgo.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+              <span className="text-5xl mb-3">✅</span>
+              <p className="text-lg font-medium text-green-600">¡Todo excelente!</p>
               <p>No hay alumnos en riesgo bajo estos filtros.</p>
             </div>
           )}

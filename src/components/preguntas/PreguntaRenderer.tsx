@@ -2,10 +2,12 @@ import type { Pregunta } from "../../types"
 import PreguntaOpcion from "./PreguntaOpcion"
 import PreguntaEmocion from "./PreguntaEmocion"
 import PreguntaAbierta from "./PreguntaAbierta"
+import PreguntaDibujo from "./PreguntaDibujo"
+import PreguntaMultiple from "./PreguntaMultiple"
 
 interface Props {
   pregunta: Pregunta
-  onResponder: (valor: string) => void // Cambiamos de any a string
+  onResponder: (valor: string) => void
 }
 
 export default function PreguntaRenderer({ pregunta, onResponder }: Props) {
@@ -19,6 +21,12 @@ export default function PreguntaRenderer({ pregunta, onResponder }: Props) {
 
     case "abierto":
       return <PreguntaAbierta pregunta={pregunta} onResponder={onResponder} />
+
+    case "dibujo":
+      return <PreguntaDibujo pregunta={pregunta} onResponder={onResponder} />
+
+    case "multiple":
+      return <PreguntaMultiple pregunta={pregunta} onResponder={onResponder} />
 
     default:
       return (
