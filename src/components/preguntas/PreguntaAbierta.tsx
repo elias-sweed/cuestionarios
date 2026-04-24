@@ -1,5 +1,5 @@
 import { useState } from "react"
-import type { Pregunta } from "../../types" // Añadido para mantener consistencia
+import type { Pregunta } from "../../types"
 
 interface Props {
   pregunta: Pregunta
@@ -17,7 +17,7 @@ export default function PreguntaAbierta({ onResponder }: Props) {
     }
 
     setError("")
-    onResponder(valor.trim()) // Usamos trim() para guardar el texto limpio sin espacios extras
+    onResponder(valor.trim())
   }
 
   return (
@@ -28,19 +28,21 @@ export default function PreguntaAbierta({ onResponder }: Props) {
           setValor(e.target.value)
           if (error) setError("")
         }}
-        className="w-full border-2 border-gray-200 bg-gray-50 p-4 rounded-xl focus:bg-white focus:ring-0 focus:border-blue-600 outline-none transition-all resize-y min-h-[150px] text-gray-700"
+        /* Estilo oscuro con foco azul neón */
+        className="w-full border-2 border-blue-500/20 bg-slate-800/50 p-4 rounded-2xl focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-y min-h-[150px] text-white placeholder:text-slate-500"
         placeholder="Escribe tu respuesta aquí..."
       />
 
       {error && (
-        <div className="p-3 bg-red-50 text-red-600 text-sm font-medium rounded-lg border border-red-100 flex items-center gap-2">
+        <div className="p-3 bg-red-900/30 text-red-400 text-sm font-medium rounded-lg border border-red-500/20 flex items-center gap-2 animate-shake">
           <span>⚠️</span> {error}
         </div>
       )}
 
       <button
         onClick={handleContinuar}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-xl transition-all duration-200 shadow-md shadow-blue-600/20"
+        /* Botón con sombra de resplandor neón */
+        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-4 rounded-xl transition-all duration-300 shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:shadow-[0_0_30px_rgba(37,99,235,0.6)] active:scale-95"
       >
         Continuar
       </button>

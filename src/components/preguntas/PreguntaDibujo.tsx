@@ -7,16 +7,13 @@ interface Props {
 }
 
 export default function PreguntaDibujo({ pregunta, onResponder }: Props) {
-  // Aquí guardaremos todas las opciones que el niño vaya tocando
   const [seleccionados, setSeleccionados] = useState<string[]>([])
   const [error, setError] = useState("")
 
   const toggleSeleccion = (opcion: string) => {
     if (seleccionados.includes(opcion)) {
-      // Si ya la había tocado, la quitamos
       setSeleccionados(seleccionados.filter((item) => item !== opcion))
     } else {
-      // Si no la había tocado, la agregamos
       setSeleccionados([...seleccionados, opcion])
     }
     setError("")
@@ -27,20 +24,16 @@ export default function PreguntaDibujo({ pregunta, onResponder }: Props) {
       setError("¡Elige al menos una parte tocándola con tu dedito o el mouse! 👆")
       return
     }
-
-    // Unimos las respuestas con coma para guardarlas como un solo texto en Supabase
     onResponder(seleccionados.join(", "))
   }
 
-  // Si tu base de datos no tiene las opciones cargadas para esta pregunta, 
-  // usamos estas por defecto que son amigables para niños.
   const opciones = pregunta.opciones?.length 
     ? pregunta.opciones 
     : ["Cabeza 👦", "Cara 😊", "Brazos 💪", "Manos ✋", "Piernas 🦵", "Pies 🦶"]
 
   return (
     <div className="space-y-6">
-      <p className="text-center text-blue-500 font-bold mb-4 animate-pulse">
+      <p className="text-center text-blue-400 font-black text-lg mb-4 animate-pulse drop-shadow-[0_0_8px_rgba(96,165,250,0.5)]">
         ¡Puedes elegir todas las que quieras!
       </p>
       
@@ -50,11 +43,12 @@ export default function PreguntaDibujo({ pregunta, onResponder }: Props) {
           return (
             <button
               key={op}
+              type="button"
               onClick={() => toggleSeleccion(op)}
-              className={`p-4 rounded-3xl text-lg font-bold transition-all duration-300 transform ${
+              className={`p-5 rounded-3xl text-lg font-black transition-all duration-300 transform active:scale-90 ${
                 isSelected
-                  ? "bg-blue-500 text-white scale-105 shadow-xl shadow-blue-500/40 ring-4 ring-blue-300"
-                  : "bg-white text-gray-600 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 hover:scale-105"
+                  ? "bg-blue-600 text-white scale-105 shadow-[0_0_20px_rgba(37,99,235,0.6)] border-transparent ring-2 ring-blue-300"
+                  : "bg-slate-800/40 text-blue-100 border-2 border-blue-500/20 hover:border-blue-400/50 hover:bg-slate-700/50 hover:scale-105"
               }`}
             >
               {op}
@@ -64,14 +58,14 @@ export default function PreguntaDibujo({ pregunta, onResponder }: Props) {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-100 text-red-600 text-sm font-bold rounded-2xl border-2 border-red-200 text-center animate-bounce">
+        <div className="p-4 bg-red-900/30 text-red-400 text-sm font-bold rounded-2xl border-2 border-red-500/20 text-center animate-bounce shadow-[0_0_15px_rgba(239,68,68,0.2)]">
           {error}
         </div>
       )}
 
       <button
         onClick={handleContinuar}
-        className="w-full mt-8 bg-green-500 hover:bg-green-600 text-white font-black text-xl py-4 px-4 rounded-2xl transition-all duration-200 shadow-lg shadow-green-500/30 transform hover:scale-[1.02]"
+        className="w-full mt-8 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xl py-5 px-4 rounded-2xl transition-all duration-300 shadow-[0_0_25px_rgba(16,185,129,0.4)] hover:shadow-[0_0_35px_rgba(16,185,129,0.6)] transform hover:scale-[1.02] active:scale-95"
       >
         ¡Listo, continuar! 🚀
       </button>

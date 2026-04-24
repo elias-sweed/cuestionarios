@@ -1,7 +1,7 @@
 import { useState } from "react"
 import FormEstudiante from "./components/FormEstudiante"
 import PreguntasScreen from "./components/PreguntasScreen"
-import CuestionarioInicial from "./components/CuestionarioInicial" // Importamos el nuevo
+import CuestionarioInicial from "./components/CuestionarioInicial"
 import AdminDashboard from "./components/AdminDashboard"
 import AdminLogin from "./components/admin/AdminLogin"
 import { useAuth } from "./hooks/useAuth"
@@ -16,7 +16,7 @@ function App() {
   // Función para renderizar el contenido según el estado
   const renderContent = () => {
     if (path === "/admin/login") {
-      if (loading) return <div>Cargando...</div>
+      if (loading) return <div className="text-white text-center mt-20">Cargando...</div>
       if (session) {
         window.location.replace("/admin")
         return null
@@ -25,7 +25,7 @@ function App() {
     }
 
     if (path.startsWith("/admin")) {
-      if (loading) return <div>Cargando...</div>
+      if (loading) return <div className="text-white text-center mt-20">Cargando...</div>
       if (!session) {
         window.location.replace("/admin/login")
         return null
@@ -45,27 +45,28 @@ function App() {
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
-      {/* CAPA DE FONDO */}
+    <div className="relative min-h-screen w-full overflow-hidden bg-[#0a0f1a]">
+      {/* CAPA DE FONDO GLOBAL */}
       <div className="fixed inset-0 z-0">
         <DotField
-          dotRadius={1.5}
-          dotSpacing={14}
-          bulgeStrength={67}
-          glowRadius={160}
+          dotRadius={1.2}
+          dotSpacing={16}
+          bulgeStrength={60}
+          glowRadius={200}
           sparkle={false}
           waveAmplitude={0}
-          cursorRadius={500}
-          cursorForce={0.1}
+          cursorRadius={400}
+          cursorForce={0.15}
           bulgeOnly
-          gradientFrom="#A855F7"
-          gradientTo="#B497CF"
-          glowColor="#120F17"
+          /* Colores ajustados a Azul Neón para combinar con el Rayo */
+          gradientFrom="#2563eb" 
+          gradientTo="#1e3a8a"
+          glowColor="#0f172a"
         />
       </div>
 
       {/* CAPA DE CONTENIDO */}
-      <div className="relative z-10">
+      <div className="relative z-10 w-full min-h-screen">
         {renderContent()}
       </div>
     </div>
