@@ -67,7 +67,7 @@ export default function FormEstudiante({ onSuccess }: Props) {
   const secciones = ["A", "B", "C", "D", "E", "F"]
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50 p-4">
+    <div className="flex justify-center items-center min-h-screen p-4">
       <form
         onSubmit={handleSubmit}
         className="bg-white p-8 rounded-3xl shadow-lg shadow-gray-200/50 border border-gray-100 w-full max-w-md space-y-6 animate-fade-in"

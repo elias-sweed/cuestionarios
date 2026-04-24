@@ -6,52 +6,70 @@ import AdminDashboard from "./components/AdminDashboard"
 import AdminLogin from "./components/admin/AdminLogin"
 import { useAuth } from "./hooks/useAuth"
 import type { Estudiante } from "./types"
+import DotField from "./components/DotField"
 
 function App() {
   const [estudiante, setEstudiante] = useState<Estudiante | null>(null)
-
   const { session, loading } = useAuth()
-
   const path = window.location.pathname
 
-  // 🔐 RUTA DE LOGIN ADMIN
-  if (path === "/admin/login") {
-    if (loading) return <div>Cargando...</div>
-    
-    // Si ya está logueado → lo manda directo al dashboard
-    if (session) {
-      window.location.replace("/admin")
-      return null
-    }
-    
-    return <AdminLogin />
-  }
-
-  // 🔐 RUTAS PROTEGIDAS DEL ADMIN
-  if (path.startsWith("/admin")) {
-    if (loading) return <div>Cargando...</div>
-
-    // Si no hay sesión → lo manda al login
-    if (!session) {
-      window.location.replace("/admin/login")
-      return null
+  // Función para renderizar el contenido según el estado
+  const renderContent = () => {
+    if (path === "/admin/login") {
+      if (loading) return <div>Cargando...</div>
+      if (session) {
+        window.location.replace("/admin")
+        return null
+      }
+      return <AdminLogin />
     }
 
-    return <AdminDashboard />
+    if (path.startsWith("/admin")) {
+      if (loading) return <div>Cargando...</div>
+      if (!session) {
+        window.location.replace("/admin/login")
+        return null
+      }
+      return <AdminDashboard />
+    }
+
+    if (!estudiante) {
+      return <FormEstudiante onSuccess={setEstudiante} />
+    }
+
+    if (estudiante.grado === "0") {
+      return <CuestionarioInicial estudiante={estudiante} />
+    }
+
+    return <PreguntasScreen estudiante={estudiante} />
   }
 
-  // 👨‍🎓 APP NORMAL PARA ESTUDIANTES
-  if (!estudiante) {
-    return <FormEstudiante onSuccess={setEstudiante} />
-  }
+  return (
+    <div className="relative min-h-screen w-full overflow-hidden">
+      {/* CAPA DE FONDO */}
+      <div className="fixed inset-0 z-0">
+        <DotField
+          dotRadius={1.5}
+          dotSpacing={14}
+          bulgeStrength={67}
+          glowRadius={160}
+          sparkle={false}
+          waveAmplitude={0}
+          cursorRadius={500}
+          cursorForce={0.1}
+          bulgeOnly
+          gradientFrom="#A855F7"
+          gradientTo="#B497CF"
+          glowColor="#120F17"
+        />
+      </div>
 
-  // 🔥 LA MAGIA ESTÁ AQUÍ: Si es Inicial (0), va al nuevo cuestionario interactivo
-  if (estudiante.grado === "0") {
-    return <CuestionarioInicial estudiante={estudiante} />
-  }
-
-  // Si es Primaria (1 a 6), va al cuestionario normal
-  return <PreguntasScreen estudiante={estudiante} />
+      {/* CAPA DE CONTENIDO */}
+      <div className="relative z-10">
+        {renderContent()}
+      </div>
+    </div>
+  )
 }
 
 export default App
