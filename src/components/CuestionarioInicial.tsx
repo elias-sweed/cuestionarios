@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion"; // Para animaciones
 import { supabase } from "../lib/supabaseClient";
 import type { Estudiante } from "../types";
 import { descargarReporteInicialExcel } from "../utils/exportExcelInicial";
 import LiquidEther from "./LiquidEther";
 
+// Importación de imágenes
 import imgCartilla1 from "../assets/imagen_niños_inicial_comparar.jpeg";
 import imgCartilla2 from "../assets/como_se_sinte_este_niño.png";
 import imgCartilla3 from "../assets/como_se_sinte_este_niña.png";
@@ -32,6 +34,7 @@ const PREGUNTAS_INICIAL = [
 
 export default function CuestionarioInicial({ estudiante }: Props) {
   const [paso, setPaso] = useState(0);
+  const [direction, setDirection] = useState(0); // 1 para adelante, -1 para atrás
   const [loading, setLoading] = useState(false);
 
   const [respuestas, setRespuestas] = useState<Record<string, number>>({});
@@ -43,6 +46,7 @@ export default function CuestionarioInicial({ estudiante }: Props) {
   const handleCalificar = (puntaje: number) => {
     const preguntaActual = PREGUNTAS_INICIAL[paso];
     setRespuestas({ ...respuestas, [preguntaActual.id]: puntaje });
+    setDirection(1); // Animación hacia la derecha
     setPaso(paso + 1);
   };
 
@@ -73,13 +77,34 @@ export default function CuestionarioInicial({ estudiante }: Props) {
   const esFaseRiesgos = paso === PREGUNTAS_INICIAL.length;
   const preguntaActual = !esFaseRiesgos ? PREGUNTAS_INICIAL[paso] : null;
 
+  // Variantes para la animación de las tarjetas
+  const variants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 500 : -500,
+      opacity: 0,
+      scale: 0.9
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+      scale: 1
+    },
+    exit: (direction: number) => ({
+      zIndex: 0,
+      x: direction < 0 ? 500 : -500,
+      opacity: 0,
+      scale: 0.9
+    })
+  };
+
   return (
-    <div className="min-h-screen relative flex flex-col p-4 md:p-8 font-sans overflow-hidden">
+    <div className="min-h-screen relative flex flex-col p-4 md:p-8 font-sans overflow-hidden bg-[#0f0720]">
       
-      {/* 🌊 CAPA 1: EL FONDO LÍQUIDO MÁGICO (z-0) */}
-      <div className="absolute inset-0 z-0 opacity-80">
+      {/* 🌊 FONDO DINÁMICO */}
+      <div className="absolute inset-0 z-0">
         <LiquidEther
-          colors={['#5227FF', '#FF9FFC', '#B497CF']}
+          colors={['#1e1b4b', '#4c1d95', '#1e1b4b']}
           mouseForce={20}
           cursorSize={100}
           isViscous={true}
@@ -97,98 +122,122 @@ export default function CuestionarioInicial({ estudiante }: Props) {
         />
       </div>
 
-      {/* ✨ CAPA 2: EL CONTENIDO CON EFECTO CRISTAL (z-10) */}
       <div className="relative z-10 flex-1 flex flex-col max-w-5xl mx-auto w-full">
         
-        {/* CABECERA (Efecto Vidrio) */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/50 px-6 py-4 rounded-3xl shadow-xl flex justify-between items-center mb-6">
+        {/* CABECERA */}
+        <header className="bg-white/10 backdrop-blur-2xl border border-white/20 px-6 py-4 rounded-3xl shadow-2xl flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-xl font-bold text-indigo-900 drop-shadow-sm">Entrevista - 5 Años</h1>
-            <p className="text-sm text-gray-700">Alumno/a: <span className="font-bold text-gray-900">{estudiante.nombres} {estudiante.apellidos}</span></p>
+            <h1 className="text-xl font-black text-white tracking-tight">Evaluación Inicial</h1>
+            <p className="text-sm text-blue-200/70 italic">Alumno: {estudiante.nombres}</p>
           </div>
-          <div className="bg-indigo-600/10 border border-indigo-200 text-indigo-800 px-5 py-2 rounded-2xl font-bold shadow-inner">
-            {esFaseRiesgos ? "Finalizar" : `Pregunta ${paso + 1} de ${PREGUNTAS_INICIAL.length}`}
+          <div className="bg-blue-500/20 border border-blue-400/30 text-blue-300 px-5 py-2 rounded-2xl font-black text-sm uppercase tracking-tighter shadow-lg">
+            {esFaseRiesgos ? "FASE FINAL" : `PROGRESO: ${paso + 1} / ${PREGUNTAS_INICIAL.length}`}
           </div>
-        </div>
+        </header>
 
-        {/* ÁREA DE ENTREVISTA */}
-        {!esFaseRiesgos && preguntaActual ? (
-          <div className="flex-1 flex flex-col justify-between w-full animate-fade-in gap-6">
-            
-            {/* ZONA DEL NIÑO (Tarjeta principal de cristal) */}
-            <div className="bg-white/60 backdrop-blur-2xl border border-white/60 rounded-[40px] shadow-2xl flex-1 flex flex-col items-center justify-center p-8 text-center transition-all">
-              <h2 className="text-3xl md:text-4xl font-black text-gray-800 leading-tight mb-8 drop-shadow-sm">
-                {preguntaActual.titulo}
-              </h2>
-              
-              {preguntaActual.imagen ? (
-                <img 
-                  src={preguntaActual.imagen} 
-                  alt="Cartilla visual" 
-                  className="max-h-[350px] w-auto object-contain rounded-3xl border-[6px] border-white/80 shadow-2xl transition-transform hover:scale-[1.02]"
-                />
-              ) : (
-                <div className="w-full max-w-md aspect-video bg-white/50 rounded-3xl border-2 border-dashed border-indigo-300/50 flex items-center justify-center shadow-inner">
-                  <p className="text-indigo-600/70 font-medium text-xl">
-                    (Pregunta oral)
-                  </p>
+        {/* CONTENEDOR DE ANIMACIÓN */}
+        <div className="flex-1 relative flex flex-col">
+          <AnimatePresence custom={direction} mode="wait">
+            {!esFaseRiesgos && preguntaActual ? (
+              <motion.div
+                key={preguntaActual.id}
+                custom={direction}
+                variants={variants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{
+                  x: { type: "spring", stiffness: 300, damping: 30 },
+                  opacity: { duration: 0.2 }
+                }}
+                className="flex-1 flex flex-col gap-6"
+              >
+                {/* PREGUNTA PARA EL NIÑO */}
+                <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-[40px] shadow-2xl flex-1 flex flex-col items-center justify-center p-8 text-center">
+                  <h2 className="text-3xl md:text-5xl font-black text-white leading-tight mb-8 drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
+                    {preguntaActual.titulo}
+                  </h2>
+                  
+                  <div className="relative group">
+                    {preguntaActual.imagen ? (
+                      <img 
+                        src={preguntaActual.imagen} 
+                        alt="Cartilla" 
+                        className="max-h-[380px] w-auto object-contain rounded-[2rem] border-8 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all group-hover:scale-[1.03]"
+                      />
+                    ) : (
+                      <div className="w-64 h-64 rounded-full bg-blue-500/10 border-4 border-dashed border-blue-400/30 flex items-center justify-center">
+                        <span className="text-6xl animate-pulse">📢</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* ZONA DE LA PROFESORA (Botones de evaluación) */}
-            <div className="bg-white/80 backdrop-blur-xl border border-white/50 rounded-[32px] shadow-xl p-6">
-              <p className="text-center text-sm font-bold text-indigo-500/80 uppercase tracking-widest mb-4">
-                Panel Docente: Evaluar ({preguntaActual.indicador})
-              </p>
-              <div className="grid grid-cols-3 gap-4">
-                <button onClick={() => handleCalificar(0)} className="py-5 rounded-2xl font-bold text-lg bg-red-50/80 text-red-600 border border-red-200/50 hover:bg-red-100/90 hover:scale-[1.03] transition-all shadow-sm backdrop-blur-sm">
-                  ❌ No lo logra
+                {/* BOTONES DOCENTE */}
+                <div className="bg-slate-900/60 backdrop-blur-xl border border-blue-500/20 rounded-[32px] p-6 shadow-2xl">
+                  <p className="text-center text-xs font-black text-blue-400 uppercase tracking-[0.2em] mb-4">
+                    Panel de Calificación
+                  </p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <button onClick={() => handleCalificar(0)} className="group py-5 rounded-2xl font-black text-lg bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500 hover:text-white transition-all shadow-lg active:scale-90">
+                      NO LOGRA
+                    </button>
+                    <button onClick={() => handleCalificar(1)} className="group py-5 rounded-2xl font-black text-lg bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 hover:bg-yellow-500 hover:text-white transition-all shadow-lg active:scale-90">
+                      EN PROCESO
+                    </button>
+                    <button onClick={() => handleCalificar(2)} className="group py-5 rounded-2xl font-black text-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500 hover:text-white transition-all shadow-lg active:scale-90">
+                      LOGRADO
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              /* SECCIÓN RIESGOS */
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-slate-900/80 backdrop-blur-3xl border border-white/10 max-w-2xl mx-auto w-full rounded-[40px] shadow-2xl p-8 relative overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+                <div className="text-center mb-8">
+                  <span className="text-5xl mb-2 block">📋</span>
+                  <h2 className="text-2xl font-black text-white">Factores de Riesgo</h2>
+                  <p className="text-blue-200/50 text-sm">Observación directa del docente</p>
+                </div>
+
+                <div className="space-y-3 mb-8">
+                  {[
+                    { id: 'moretones', label: '¿Muestra moretones?' },
+                    { id: 'marcas', label: '¿Marcas enrojecidas?' },
+                    { id: 'rasgunos', label: '¿Tiene rasguños?' },
+                    { id: 'desaseado', label: '¿Falta de higiene frecuente?' },
+                    { id: 'partes_intimas', label: '¿No reconoce partes íntimas?' },
+                    { id: 'esfinteres', label: '¿Incontinencia (orina/heces)?' },
+                    { id: 'dolor_zona', label: '¿Refiere dolor en zona íntima?' }
+                  ].map(riesgo => (
+                    <label key={riesgo.id} className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer ${riesgos[riesgo.id as keyof typeof riesgos] === 1 ? 'border-red-500/50 bg-red-500/10' : 'border-white/5 bg-white/5 hover:bg-white/10'}`}>
+                      <span className="text-white font-medium text-sm">{riesgo.label}</span>
+                      <input 
+                        type="checkbox" 
+                        className="w-6 h-6 rounded-lg bg-slate-800 border-white/10 text-red-500 focus:ring-red-500"
+                        checked={riesgos[riesgo.id as keyof typeof riesgos] === 1} 
+                        onChange={() => handleToggleRiesgo(riesgo.id as keyof typeof riesgos)} 
+                      />
+                    </label>
+                  ))}
+                </div>
+
+                <button 
+                  disabled={loading} 
+                  onClick={finalizarYGuardar} 
+                  className="w-full py-5 rounded-2xl font-black text-xl text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-900/40 disabled:opacity-50"
+                >
+                  {loading ? "GUARDANDO..." : "FINALIZAR EVALUACIÓN 🚀"}
                 </button>
-                <button onClick={() => handleCalificar(1)} className="py-5 rounded-2xl font-bold text-lg bg-yellow-50/80 text-yellow-600 border border-yellow-200/50 hover:bg-yellow-100/90 hover:scale-[1.03] transition-all shadow-sm backdrop-blur-sm">
-                  ⏳ En proceso
-                </button>
-                <button onClick={() => handleCalificar(2)} className="py-5 rounded-2xl font-bold text-lg bg-green-50/80 text-green-600 border border-green-200/50 hover:bg-green-100/90 hover:scale-[1.03] transition-all shadow-sm backdrop-blur-sm">
-                  ⭐ Lo logra
-                </button>
-              </div>
-            </div>
-
-          </div>
-        ) : (
-
-          /* FASE FINAL: RIESGOS */
-          <div className="bg-white/80 backdrop-blur-2xl border border-white/60 max-w-3xl mx-auto w-full rounded-[40px] shadow-2xl p-8 animate-fade-in relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-400 via-pink-500 to-red-400"></div>
-            
-            <div className="text-center mb-8 mt-4">
-              <span className="text-6xl mb-4 block drop-shadow-md">👩‍🏫</span>
-              <h2 className="text-3xl font-bold text-gray-800 drop-shadow-sm">Factores de Riesgo</h2>
-              <p className="text-gray-600 font-medium">Completa esta sección en privado según tus observaciones.</p>
-            </div>
-
-            <div className="space-y-4 mb-10">
-              {[
-                { id: 'moretones', label: 'Muestra moretones en el cuerpo' },
-                { id: 'marcas', label: 'Muestra marcas enrojecidas' },
-                { id: 'rasgunos', label: 'Muestra rasguños' },
-                { id: 'desaseado', label: 'Se presenta desaseado frecuentemente' },
-                { id: 'partes_intimas', label: 'No reconoce las partes íntimas de su cuerpo' },
-                { id: 'esfinteres', label: 'Se orina o defeca en su ropa' },
-                { id: 'dolor_zona', label: 'Refiere dolor o picor en zona íntima' }
-              ].map(riesgo => (
-                <label key={riesgo.id} className="flex items-center justify-between p-4 bg-white/60 backdrop-blur-sm rounded-2xl border border-white/80 cursor-pointer hover:bg-red-50/80 transition-all shadow-sm hover:shadow-md">
-                  <span className="font-medium text-gray-700">{riesgo.label}</span>
-                  <input type="checkbox" checked={riesgos[riesgo.id as keyof typeof riesgos] === 1} onChange={() => handleToggleRiesgo(riesgo.id as keyof typeof riesgos)} className="w-6 h-6 text-red-500 rounded-md border-gray-300 focus:ring-red-400" />
-                </label>
-              ))}
-            </div>
-
-            <button disabled={loading} onClick={finalizarYGuardar} className="w-full py-5 rounded-2xl font-bold text-xl text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-xl shadow-indigo-500/30 transition-all hover:scale-[1.02] disabled:opacity-50 border border-white/20">
-              {loading ? "Generando Magia..." : "✨ Finalizar y Descargar Excel"}
-            </button>
-          </div>
-        )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
