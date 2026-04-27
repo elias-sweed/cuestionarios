@@ -135,17 +135,17 @@ const handleResponder = async (valor: unknown) => {
         </div>
 
         {/* Cuerpo de la Pregunta */}
-        <div key={pregunta.id} className="p-6 sm:p-8 animate-fade-in">
+        <div key={pregunta.id} className="p-6 sm:p-8">
           <h2 className="text-2xl font-semibold text-white mb-8 leading-relaxed">
             {pregunta.texto}
           </h2>
 
-          <div className={`transition-opacity duration-300 ${isAnswering ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-            <PreguntaRenderer
-              pregunta={pregunta}
-              onResponder={handleResponder}
-            />
-          </div>
+<div className={isAnswering ? 'pointer-events-none' : ''}>
+  <PreguntaRenderer
+    pregunta={pregunta}
+    onResponder={handleResponder}
+  />
+</div>
         </div>
         
       </div>
