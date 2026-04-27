@@ -4,6 +4,7 @@ import PreguntasScreen from "./components/PreguntasScreen"
 import CuestionarioInicial from "./components/CuestionarioInicial"
 import AdminDashboard from "./components/AdminDashboard"
 import AdminLogin from "./components/admin/AdminLogin"
+import OfflineDetector from "./components/OfflineDetector"
 import { useAuth } from "./hooks/useAuth"
 import type { Estudiante } from "./types"
 import DotField from "./components/DotField"
@@ -46,6 +47,8 @@ function App() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#0a0f1a]">
+      {/* 1. Detector de Internet (Bloqueo total) */}
+      <OfflineDetector />
       {/* CAPA DE FONDO GLOBAL */}
       <div className="fixed inset-0 z-0">
         <DotField

@@ -33,27 +33,36 @@ export default function PreguntasScreen({ estudiante }: Props) {
     cargar()
   }, [nivel])
 
-  const handleResponder = async (valor: unknown) => {
-    if (isAnswering) return 
-    setIsAnswering(true)
+const handleResponder = async (valor: unknown) => {
+    // Si no hay internet, el OfflineDetector ya bloqueó la pantalla, 
+    // pero esto es una doble seguridad.
+    if (isAnswering || !window.navigator.onLine) return; 
     
-    const pregunta = preguntas[index]
+    setIsAnswering(true);
 
     try {
+      const preguntaActual = preguntas[index];
+      
+      // Guardamos
       await guardarRespuesta({
         estudiante_id: estudiante.id as string,
-        pregunta_id: pregunta.id,
+        pregunta_id: preguntaActual.id,
         respuesta: valor
-      })
-      setTimeout(() => {
-        setIndex((prev) => prev + 1)
-        setIsAnswering(false)
-      }, 300)
+      });
+
+      // Si llegamos aquí es que Supabase respondió OK
+      setIndex((prev) => prev + 1);
+      
     } catch (error) {
-      console.error("Error al guardar respuesta:", error)
-      setIsAnswering(false)
+      // Si falla el envío (ej. microcorte de internet justo al dar clic)
+      console.error("Error al guardar:", error);
+      // No pasamos de pregunta, dejamos que el niño intente otra vez cuando vuelva el internet
+      alert("Error de conexión. Tu respuesta no se guardó. Intenta de nuevo.");
+    } finally {
+      // IMPORTANTE: Siempre liberamos el botón, pase lo que pase.
+      setIsAnswering(false);
     }
-  }
+  };
 
   // Fondo común para todos los estados
   const FondoLayout = ({ children }: { children: React.ReactNode }) => (

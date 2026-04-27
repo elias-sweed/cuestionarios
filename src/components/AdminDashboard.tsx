@@ -81,7 +81,7 @@ export default function AdminDashboard() {
           
           <button 
             onClick={async () => { await logout(); window.location.replace("/") }} 
-            className="group flex items-center gap-3 px-8 py-4 bg-slate-900/50 hover:bg-red-500/10 text-slate-400 hover:text-red-400 rounded-[2rem] border border-white/5 transition-all font-black text-xs tracking-widest shadow-xl backdrop-blur-md"
+            className="group flex items-center gap-3 px-8 py-4 bg-slate-900/50 hover:bg-red-500/10 text-slate-400 hover:text-red-400 rounded-4xl border border-white/5 transition-all font-black text-xs tracking-widest shadow-xl backdrop-blur-md"
           >
             <LogOut className="w-5 h-5 group-hover:rotate-12 transition-transform" /> CERRAR SESIÓN
           </button>

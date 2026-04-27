@@ -24,7 +24,7 @@ export default function DashboardRiesgoTable({ alumnos, totalData }: Props) {
       <div className="overflow-hidden border border-white/5 rounded-3xl bg-slate-950/20">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left border-collapse">
-            <thead className="bg-slate-900/80 text-slate-500 font-black uppercase tracking-[0.1em] text-[10px]">
+            <thead className="bg-slate-900/80 text-slate-500 font-black uppercase tracking-widest text-[10px]">
               <tr>
                 <th className="px-6 py-5 border-b border-white/5">Estudiante</th>
                 <th className="px-6 py-5 border-b border-white/5">Grado / Sección</th>
@@ -34,7 +34,7 @@ export default function DashboardRiesgoTable({ alumnos, totalData }: Props) {
             </thead>
             <tbody className="divide-y divide-white/5">
               {alumnos.map((alumno) => (
-                <tr key={alumno.estudiante_id} className="hover:bg-white/[0.02] transition-colors group">
+                <tr key={alumno.estudiante_id} className="hover:bg-white/2 transition-colors group">
                   <td className="px-6 py-5 font-bold text-slate-200 uppercase italic tracking-wide group-hover:text-white transition-colors">
                     {alumno.nombres} {alumno.apellidos}
                   </td>
@@ -80,7 +80,7 @@ export default function DashboardRiesgoTable({ alumnos, totalData }: Props) {
 
         {/* Estado: Todo OK */}
         {totalData > 0 && alumnos.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 bg-emerald-500/[0.02]">
+          <div className="flex flex-col items-center justify-center py-24 bg-emerald-500/2">
             <div className="relative mb-6">
               <CheckCircle2 className="w-20 h-20 text-emerald-500/20" />
               <CheckCircle2 className="w-20 h-20 text-emerald-500 absolute inset-0 blur-xl opacity-40" />
