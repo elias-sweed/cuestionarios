@@ -5,7 +5,7 @@ import { mapNivel } from "../utils/mapNivel"
 import PreguntaRenderer from "./preguntas/PreguntaRenderer"
 import type { Pregunta, Estudiante } from "../types"
 import ProgressBar from "./ProgressBar"
-import DotField from "./DotField" // Importamos el fondo
+import DotField from "./DotField"
 
 interface Props {
   estudiante: Estudiante
@@ -16,6 +16,7 @@ export default function PreguntasScreen({ estudiante }: Props) {
   const [index, setIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isAnswering, setIsAnswering] = useState(false)
+  const [tiempoRestante, setTiempoRestante] = useState(90) // 90 segundos (1:30 min)
 
   const nivel = mapNivel(estudiante.grado)
 
@@ -33,37 +34,49 @@ export default function PreguntasScreen({ estudiante }: Props) {
     cargar()
   }, [nivel])
 
-const handleResponder = async (valor: unknown) => {
-  if (isAnswering || !window.navigator.onLine) return;
+  // Lógica del Cronómetro
+  useEffect(() => {
+    if (loading || index >= preguntas.length) return;
 
-  const preguntaActual = preguntas[index];
+    setTiempoRestante(90); // Reiniciar al cambiar de pregunta
 
-  // --- PASO 1: CAMBIO INSTANTÁNEO ---
-  // Cambiamos la pregunta de inmediato para que el niño no sienta retraso
-  setIndex((prev) => prev + 1);
-  setIsAnswering(true);
+    const intervalo = setInterval(() => {
+      setTiempoRestante((prev) => {
+        if (prev <= 1) {
+          clearInterval(intervalo);
+          handleResponder(null); // Guardar como null si se acaba el tiempo
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-  try {
-    // --- PASO 2: GUARDADO EN SEGUNDO PLANO ---
-    await guardarRespuesta({
-      estudiante_id: estudiante.id as string,
-      pregunta_id: preguntaActual.id,
-      respuesta: valor
-    });
-    
-    // Si sale bien, solo liberamos el bloqueo
-    setIsAnswering(false);
+    return () => clearInterval(intervalo);
+  }, [index, loading, preguntas.length]);
 
-  } catch (error) {
-    console.error("Error al guardar:", error);
-    // Si falla, avisamos, pero el niño ya está en la siguiente pregunta
-    // (Opcional: podrías restar 1 al index si quieres obligarlo a repetir, 
-    // pero para fluidez extrema, mejor dejarlo pasar y loguear el error)
-    setIsAnswering(false);
-  }
-};
+  const handleResponder = async (valor: unknown) => {
+    if (isAnswering || !window.navigator.onLine) return;
 
-  // Fondo común para todos los estados
+    const preguntaActual = preguntas[index];
+
+    // CAMBIO INSTANTÁNEO (Optimista)
+    setIndex((prev) => prev + 1);
+    setIsAnswering(true);
+
+    try {
+      await guardarRespuesta({
+        estudiante_id: estudiante.id as string,
+        pregunta_id: preguntaActual.id,
+        respuesta: valor // Enviará el valor o null (si expiró el tiempo)
+      });
+      
+      setIsAnswering(false);
+    } catch (error) {
+      console.error("Error al guardar:", error);
+      setIsAnswering(false);
+    }
+  };
+
   const FondoLayout = ({ children }: { children: React.ReactNode }) => (
     <div className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 bg-[#0a0f1a]">
       <div className="fixed inset-0 z-0">
@@ -122,16 +135,39 @@ const handleResponder = async (valor: unknown) => {
 
   const pregunta = preguntas[index]
 
+  // Formatear el tiempo MM:SS
+  const minutos = Math.floor(tiempoRestante / 60);
+  const segundos = tiempoRestante % 60;
+
   return (
     <FondoLayout>
       <div className="max-w-2xl w-full bg-slate-900/80 backdrop-blur-md rounded-3xl shadow-2xl border border-blue-500/30 overflow-hidden">
         
-        {/* Header con Progreso */}
-        <div className="px-6 py-5 border-b border-white/10 bg-white/5">
-          <ProgressBar actual={index + 1} total={preguntas.length} />
-          <p className="text-sm text-blue-300 font-medium mt-3">
-            Pregunta {index + 1} de {preguntas.length}
-          </p>
+        {/* Header con Progreso y Cronómetro */}
+        <div className="px-6 py-5 border-b border-white/10 bg-white/5 flex justify-between items-center">
+          <div className="flex-1 mr-4">
+            <ProgressBar actual={index + 1} total={preguntas.length} />
+            <p className="text-sm text-blue-300 font-medium mt-3">
+              Pregunta {index + 1} de {preguntas.length}
+            </p>
+          </div>
+
+          {/* Cronómetro con cambio de colores dinámico */}
+          <div className={`w-22.5 flex justify-center py-2 rounded-2xl border transition-all duration-500 ${
+  tiempoRestante <= 20 
+    ? 'border-red-500 bg-red-500/20 animate-pulse' 
+    : tiempoRestante <= 45 
+    ? 'border-yellow-500 bg-yellow-500/20' 
+    : 'border-blue-500/30 bg-blue-500/10'
+}`}>
+  <span className={`text-xl font-mono font-bold tabular-nums ${
+    tiempoRestante <= 20 ? 'text-red-400' : 
+    tiempoRestante <= 45 ? 'text-yellow-400' : 
+    'text-blue-400'
+  }`}>
+    {minutos}:{segundos < 10 ? `0${segundos}` : segundos}
+  </span>
+</div>
         </div>
 
         {/* Cuerpo de la Pregunta */}
@@ -140,12 +176,12 @@ const handleResponder = async (valor: unknown) => {
             {pregunta.texto}
           </h2>
 
-<div className={isAnswering ? 'pointer-events-none' : ''}>
-  <PreguntaRenderer
-    pregunta={pregunta}
-    onResponder={handleResponder}
-  />
-</div>
+          <div className={isAnswering ? 'pointer-events-none' : ''}>
+            <PreguntaRenderer
+              pregunta={pregunta}
+              onResponder={handleResponder}
+            />
+          </div>
         </div>
         
       </div>

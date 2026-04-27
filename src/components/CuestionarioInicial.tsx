@@ -163,7 +163,7 @@ export default function CuestionarioInicial({ estudiante }: Props) {
                       <img 
                         src={preguntaActual.imagen} 
                         alt="Cartilla" 
-                        className="max-h-[380px] w-auto object-contain rounded-[2rem] border-8 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all group-hover:scale-[1.03]"
+                        className="max-h-95 w-auto object-contain rounded-4xl border-8 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all group-hover:scale-[1.03]"
                       />
                     ) : (
                       <div className="w-64 h-64 rounded-full bg-blue-500/10 border-4 border-dashed border-blue-400/30 flex items-center justify-center">
@@ -174,7 +174,7 @@ export default function CuestionarioInicial({ estudiante }: Props) {
                 </div>
 
                 {/* BOTONES DOCENTE */}
-                <div className="bg-slate-900/60 backdrop-blur-xl border border-blue-500/20 rounded-[32px] p-6 shadow-2xl">
+                <div className="bg-slate-900/60 backdrop-blur-xl border border-blue-500/20 rounded-4xl p-6 shadow-2xl">
                   <p className="text-center text-xs font-black text-blue-400 uppercase tracking-[0.2em] mb-4">
                     Panel de Calificación
                   </p>
@@ -198,7 +198,7 @@ export default function CuestionarioInicial({ estudiante }: Props) {
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-slate-900/80 backdrop-blur-3xl border border-white/10 max-w-2xl mx-auto w-full rounded-[40px] shadow-2xl p-8 relative overflow-hidden"
               >
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+                <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-rrom-blue-500 via-purple-500 to-pink-500" />
                 <div className="text-center mb-8">
                   <span className="text-5xl mb-2 block">📋</span>
                   <h2 className="text-2xl font-black text-white">Factores de Riesgo</h2>
@@ -230,7 +230,7 @@ export default function CuestionarioInicial({ estudiante }: Props) {
                 <button 
                   disabled={loading} 
                   onClick={finalizarYGuardar} 
-                  className="w-full py-5 rounded-2xl font-black text-xl text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-900/40 disabled:opacity-50"
+                  className="w-full py-5 rounded-2xl font-black text-xl text-white bg-linear-to-r from-blue-600 to-indigo-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-900/40 disabled:opacity-50"
                 >
                   {loading ? "GUARDANDO..." : "FINALIZAR EVALUACIÓN 🚀"}
                 </button>

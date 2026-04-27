@@ -29,7 +29,7 @@ export default function PreguntaAbierta({ onResponder }: Props) {
           if (error) setError("")
         }}
         /* Estilo oscuro con foco azul neón */
-        className="w-full border-2 border-blue-500/20 bg-slate-800/50 p-4 rounded-2xl focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-y min-h-[150px] text-white placeholder:text-slate-500"
+        className="w-full border-2 border-blue-500/20 bg-slate-800/50 p-4 rounded-2xl focus:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-y min-h-37.5 text-white placeholder:text-slate-500"
         placeholder="Escribe tu respuesta aquí..."
       />
 

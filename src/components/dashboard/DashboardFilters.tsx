@@ -33,7 +33,7 @@ export default function DashboardFilters({ grado, seccion, total, onGradoChange,
           <select
             value={grado}
             onChange={(e) => onGradoChange(e.target.value)}
-            className="min-w-[160px] border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-3.5 focus:bg-slate-900 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer hover:border-cyan-500/30"
+            className="min-w-40 border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-3.5 focus:bg-slate-900 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer hover:border-cyan-500/30"
           >
             <option value="todos" className="bg-slate-900">Todos los grados</option>
             <option value="0" className="bg-slate-900">Inicial (5 años)</option> 
@@ -51,7 +51,7 @@ export default function DashboardFilters({ grado, seccion, total, onGradoChange,
           <select
             value={seccion}
             onChange={(e) => onSeccionChange(e.target.value)}
-            className="min-w-[160px] border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-3.5 focus:bg-slate-900 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer hover:border-cyan-500/30"
+            className="min-w-40 border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-3.5 focus:bg-slate-900 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer hover:border-cyan-500/30"
           >
             <option value="todos" className="bg-slate-900">Todas las secciones</option>
             {["A", "B", "C", "D", "E", "F"].map((s) => (

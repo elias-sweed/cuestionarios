@@ -19,7 +19,7 @@ export default function DashboardCharts({ porGrado, porSeccion, emociones }: Pro
             <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
             Distribución por Grado
           </h2>
-          <div className="h-[300px]">
+          <div className="h-75">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={porGrado}>
                 <XAxis 
@@ -55,7 +55,7 @@ export default function DashboardCharts({ porGrado, porSeccion, emociones }: Pro
             <span className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse" />
             Participación por Sección
           </h2>
-          <div className="h-[300px]">
+          <div className="h-75">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie 
@@ -89,7 +89,7 @@ export default function DashboardCharts({ porGrado, porSeccion, emociones }: Pro
       {/* Emociones full width */}
       <div className="bg-slate-900/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
         <h2 className="text-xl font-black text-white mb-8 tracking-tight text-center">Clima Emocional General</h2>
-        <div className="h-[400px]">
+        <div className="h-100">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
