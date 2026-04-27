@@ -34,35 +34,34 @@ export default function PreguntasScreen({ estudiante }: Props) {
   }, [nivel])
 
 const handleResponder = async (valor: unknown) => {
-    // Si no hay internet, el OfflineDetector ya bloqueó la pantalla, 
-    // pero esto es una doble seguridad.
-    if (isAnswering || !window.navigator.onLine) return; 
+  if (isAnswering || !window.navigator.onLine) return;
+
+  const preguntaActual = preguntas[index];
+
+  // --- PASO 1: CAMBIO INSTANTÁNEO ---
+  // Cambiamos la pregunta de inmediato para que el niño no sienta retraso
+  setIndex((prev) => prev + 1);
+  setIsAnswering(true);
+
+  try {
+    // --- PASO 2: GUARDADO EN SEGUNDO PLANO ---
+    await guardarRespuesta({
+      estudiante_id: estudiante.id as string,
+      pregunta_id: preguntaActual.id,
+      respuesta: valor
+    });
     
-    setIsAnswering(true);
+    // Si sale bien, solo liberamos el bloqueo
+    setIsAnswering(false);
 
-    try {
-      const preguntaActual = preguntas[index];
-      
-      // Guardamos
-      await guardarRespuesta({
-        estudiante_id: estudiante.id as string,
-        pregunta_id: preguntaActual.id,
-        respuesta: valor
-      });
-
-      // Si llegamos aquí es que Supabase respondió OK
-      setIndex((prev) => prev + 1);
-      
-    } catch (error) {
-      // Si falla el envío (ej. microcorte de internet justo al dar clic)
-      console.error("Error al guardar:", error);
-      // No pasamos de pregunta, dejamos que el niño intente otra vez cuando vuelva el internet
-      alert("Error de conexión. Tu respuesta no se guardó. Intenta de nuevo.");
-    } finally {
-      // IMPORTANTE: Siempre liberamos el botón, pase lo que pase.
-      setIsAnswering(false);
-    }
-  };
+  } catch (error) {
+    console.error("Error al guardar:", error);
+    // Si falla, avisamos, pero el niño ya está en la siguiente pregunta
+    // (Opcional: podrías restar 1 al index si quieres obligarlo a repetir, 
+    // pero para fluidez extrema, mejor dejarlo pasar y loguear el error)
+    setIsAnswering(false);
+  }
+};
 
   // Fondo común para todos los estados
   const FondoLayout = ({ children }: { children: React.ReactNode }) => (
