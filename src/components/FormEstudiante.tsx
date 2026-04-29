@@ -2,6 +2,7 @@ import { useState } from "react"
 import { crearEstudiante } from "../services/estudiante.service"
 import type { Estudiante } from "../types"
 import Lightning from './Lightning';
+import logo from "../assets/logo.png"
 
 interface Props {
   onSuccess: (estudiante: Estudiante) => void
@@ -80,16 +81,29 @@ export default function FormEstudiante({ onSuccess }: Props) {
           />
         </div>
 
-        {/* --- CONTENIDO DEL FORMULARIO --- */}
+       {/* --- CONTENIDO DEL FORMULARIO --- */}
         <div className="relative z-10 space-y-6">
-          <div className="text-center space-y-2 mb-6">
-            <div className="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-full flex items-center justify-center mx-auto text-3xl mb-4 border border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-              👋
+          <div className="text-center mb-6">
+            {/* Contenedor del Logo */}
+            <div className="relative group inline-block mb-4">
+              <div className="absolute -inset-4 bg-blue-500/20 blur-3xl rounded-full"></div>
+              <img 
+                src={logo} 
+                alt="Logo I.E." 
+                className="relative w-28 h-28 object-contain mix-blend-lighten contrast-125 transition-transform duration-300 group-hover:scale-110 mx-auto" 
+              />
             </div>
-            <h2 className="text-2xl font-bold text-white shadow-sm">Datos del estudiante</h2>
-            <p className="text-sm text-blue-200/70">Ingresa tu información para comenzar</p>
-          </div>
 
+            {/* Textos Informativos */}
+            <div className="space-y-1">
+              <h2 className="text-2xl font-bold text-white tracking-tight">
+                Datos del estudiante
+              </h2>
+              <p className="text-sm text-blue-200/70">
+                Ingresa tu información para comenzar
+              </p>
+            </div>
+          </div>
           <div className="space-y-5">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-blue-100 ml-1">Nombres</label>
