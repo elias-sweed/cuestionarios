@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { crearEstudiante } from "../services/estudiante.service"
+import { supabase } from "../lib/supabaseClient"
 import type { Estudiante } from "../types"
 import Lightning from './Lightning';
 import logo from "../assets/logo.png"
@@ -50,6 +51,41 @@ export default function FormEstudiante({ onSuccess }: Props) {
 
     setLoading(true)
     try {
+      // --- INICIO DE VALIDACIÓN DE DUPLICADOS ---
+      // Función para limpiar el texto: quita tildes, pasa a minúsculas y elimina espacios dobles
+      const normalizeText = (text: string) => {
+        return text
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, " ")
+      }
+
+      // Traemos solo los nombres y apellidos de la base de datos para comparar
+      const { data: estudiantesExistentes, error: fetchError } = await supabase
+        .from("estudiantes")
+        .select("nombres, apellidos")
+
+      if (fetchError) throw fetchError
+
+      if (estudiantesExistentes) {
+        const nombresIngresados = normalizeText(form.nombres)
+        const apellidosIngresados = normalizeText(form.apellidos)
+
+        // Buscamos si existe alguna coincidencia exacta ignorando mayúsculas, tildes y espacios
+        const esDuplicado = estudiantesExistentes.find(est => 
+          normalizeText(est.nombres) === nombresIngresados &&
+          normalizeText(est.apellidos) === apellidosIngresados
+        )
+
+        if (esDuplicado) {
+          alert("⚠️ ERROR: Ya existe un estudiante registrado con este mismo Nombre y Apellido. Por favor, verifica los datos.")
+          return // Detenemos la ejecución aquí, no se guarda el estudiante
+        }
+      }
+      // --- FIN DE VALIDACIÓN DE DUPLICADOS ---
+
       const estudiante = await crearEstudiante(form)
       onSuccess(estudiante)
     } catch (error) {
