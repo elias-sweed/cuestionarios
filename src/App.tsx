@@ -9,10 +9,20 @@ import { useAuth } from "./hooks/useAuth"
 import type { Estudiante } from "./types"
 import DotField from "./components/DotField"
 
+const STUDENT_SESSION_KEY = "estudiante_activo"
+
 function App() {
-  const [estudiante, setEstudiante] = useState<Estudiante | null>(null)
+  const [estudiante, setEstudiante] = useState<Estudiante | null>(() => {
+    const saved = localStorage.getItem(STUDENT_SESSION_KEY)
+    return saved ? JSON.parse(saved) : null
+  })
   const { session, loading } = useAuth()
   const path = window.location.pathname
+
+  const handleEstudianteSuccess = (est: Estudiante) => {
+    localStorage.setItem(STUDENT_SESSION_KEY, JSON.stringify(est))
+    setEstudiante(est)
+  }
 
   // Función para renderizar el contenido según el estado
   const renderContent = () => {
@@ -35,7 +45,7 @@ function App() {
     }
 
     if (!estudiante) {
-      return <FormEstudiante onSuccess={setEstudiante} />
+      return <FormEstudiante onSuccess={handleEstudianteSuccess} />
     }
 
     if (estudiante.grado === "0") {

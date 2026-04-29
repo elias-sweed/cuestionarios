@@ -12,12 +12,26 @@ interface Props {
 }
 
 export default function PreguntasScreen({ estudiante }: Props) {
+  // 1. LLAVE ÚNICA PARA EL LOCALSTORAGE
+  const storageKey = `eval_primaria_progreso_${estudiante.id}`;
+
   const [preguntas, setPreguntas] = useState<Pregunta[]>([])
-  const [index, setIndex] = useState(0)
+  
+  // 2. INICIALIZAR EL ÍNDICE DESDE LOCALSTORAGE SI EXISTE
+  const [index, setIndex] = useState(() => {
+    const savedIndex = localStorage.getItem(storageKey);
+    return savedIndex ? parseInt(savedIndex, 10) : 0;
+  });
+
   const [loading, setLoading] = useState(true)
   const [isAnswering, setIsAnswering] = useState(false)
 
   const nivel = mapNivel(estudiante.grado)
+
+  // 3. GUARDAR EL PROGRESO AUTOMÁTICAMENTE CADA VEZ QUE AVANZA
+  useEffect(() => {
+    localStorage.setItem(storageKey, index.toString());
+  }, [index, storageKey]);
 
   useEffect(() => {
     const cargar = async () => {
@@ -40,7 +54,6 @@ export default function PreguntasScreen({ estudiante }: Props) {
     const preguntaActual = preguntas[index];
 
     // --- CAMBIO INSTANTÁNEO ---
-    // Pasamos a la siguiente pregunta de inmediato para que sea fluido
     setIndex((prev) => prev + 1);
     setIsAnswering(true);
 
@@ -59,6 +72,7 @@ export default function PreguntasScreen({ estudiante }: Props) {
     }
   };
 
+  // Componente de fondo mantenido internamente para evitar errores
   const FondoLayout = ({ children }: { children: React.ReactNode }) => (
     <div className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 bg-[#0a0f1a]">
       <div className="fixed inset-0 z-0">
@@ -94,7 +108,10 @@ export default function PreguntasScreen({ estudiante }: Props) {
     )
   }
 
-  if (index >= preguntas.length) {
+  // 4. SI TERMINÓ, LIMPIAR STORAGE Y MOSTRAR PANTALLA FINAL
+  if (index >= preguntas.length && preguntas.length > 0) {
+    localStorage.removeItem(storageKey);
+
     return (
       <FondoLayout>
         <div className="bg-slate-900/80 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-blue-500/30 text-center max-w-md w-full animate-fade-in">
@@ -124,9 +141,16 @@ export default function PreguntasScreen({ estudiante }: Props) {
         {/* Header con Progreso */}
         <div className="px-6 py-5 border-b border-white/10 bg-white/5">
           <ProgressBar actual={index + 1} total={preguntas.length} />
-          <p className="text-sm text-blue-300 font-medium mt-3">
-            Pregunta {index + 1} de {preguntas.length}
-          </p>
+          
+          <div className="flex justify-between items-center mt-3">
+            <p className="text-sm text-blue-300 font-medium">
+              Pregunta {index + 1} de {preguntas.length}
+            </p>
+            {/* Indicador visual de guardado automático */}
+            <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-md uppercase font-bold tracking-widest border border-emerald-500/30">
+              Progreso Guardado
+            </span>
+          </div>
         </div>
 
         {/* Cuerpo de la Pregunta */}
@@ -135,7 +159,7 @@ export default function PreguntasScreen({ estudiante }: Props) {
             {pregunta.texto}
           </h2>
 
-          <div className={isAnswering ? 'pointer-events-none' : ''}>
+          <div className={isAnswering ? 'pointer-events-none opacity-50 transition-opacity duration-300' : 'transition-opacity duration-300'}>
             <PreguntaRenderer
               pregunta={pregunta}
               onResponder={handleResponder}

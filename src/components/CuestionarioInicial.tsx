@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Estudiante } from "../types";
 import { PREGUNTAS_INICIAL, FACTORES_RIESGO_CONFIG } from "../constants/preguntasInicial";
 import { guardarEvaluacionInicialDB } from "../services/evaluacionService";
 import { descargarReporteInicialExcel } from "../utils/exportExcelInicial";
-// Importamos el nuevo componente optimizado en lugar de LiquidEther
 import SoftAurora from "./SoftAurora";
 
 interface Props {
@@ -12,15 +11,33 @@ interface Props {
 }
 
 export default function CuestionarioInicial({ estudiante }: Props) {
-  const [paso, setPaso] = useState(0);
+  // 1. LEEMOS LA MEMORIA DEL NAVEGADOR AL CARGAR
+  const storageKey = `eval_inicial_${estudiante.id}`;
+  
+  const getSavedData = () => {
+    const saved = localStorage.getItem(storageKey);
+    return saved ? JSON.parse(saved) : null;
+  };
+
+  const savedData = getSavedData();
+
+  // 2. INICIAMOS LOS ESTADOS CON LO GUARDADO (O DESDE CERO SI NO HAY NADA)
+  const [paso, setPaso] = useState(savedData?.paso || 0);
   const [direction, setDirection] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const [respuestas, setRespuestas] = useState<Record<string, number>>({});
-  const [riesgos, setRiesgos] = useState<Record<string, number>>({
-    moretones: 0, marcas: 0, rasgunos: 0, desaseado: 0,
-    partes_intimas: 0, esfinteres: 0, dolor_zona: 0
-  });
+  const [respuestas, setRespuestas] = useState<Record<string, number>>(savedData?.respuestas || {});
+  const [riesgos, setRiesgos] = useState<Record<string, number>>(
+    savedData?.riesgos || {
+      moretones: 0, marcas: 0, rasgunos: 0, desaseado: 0,
+      partes_intimas: 0, esfinteres: 0, dolor_zona: 0
+    }
+  );
+
+  // 3. GUARDAMOS EN MEMORIA CADA VEZ QUE ALGO CAMBIA
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify({ paso, respuestas, riesgos }));
+  }, [paso, respuestas, riesgos, storageKey]);
 
   const handleCalificar = (puntaje: number) => {
     const preguntaActual = PREGUNTAS_INICIAL[paso];
@@ -42,6 +59,10 @@ export default function CuestionarioInicial({ estudiante }: Props) {
       alert("Hubo un error guardando en la Base de Datos, pero se descargará tu reporte.");
     } finally {
       await descargarReporteInicialExcel(estudiante, respuestas, riesgos as any, PREGUNTAS_INICIAL);
+      
+      // 4. BORRAMOS LA MEMORIA PORQUE YA TERMINÓ CON ÉXITO
+      localStorage.removeItem(storageKey);
+      
       alert("¡Evaluación finalizada! El Reporte Excel se ha descargado.");
       setLoading(false);
       window.location.reload();
@@ -60,14 +81,14 @@ export default function CuestionarioInicial({ estudiante }: Props) {
   return (
     <div className="min-h-screen relative flex flex-col p-4 md:p-8 font-sans overflow-hidden bg-[#08142b]">
       
-      {/* 🌌 NUEVO FONDO SOFT AURORA MÁS LIGERO Y CON SUS COLORES */}
+      {/* 🌌 NUEVO FONDO SOFT AURORA */}
       <div className="absolute inset-0 z-0 opacity-80">
         <SoftAurora
           speed={0.6}
           scale={1.5}
           brightness={1}
-          color1="#0891b2" // Turquesa
-          color2="#0ea5e9" // Celeste
+          color1="#0891b2"
+          color2="#0ea5e9"
           noiseFrequency={2.5}
           noiseAmplitude={1}
           bandHeight={0.5}
