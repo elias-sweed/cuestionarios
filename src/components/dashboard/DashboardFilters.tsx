@@ -53,10 +53,11 @@ export default function DashboardFilters({ grado, seccion, total, onGradoChange,
             onChange={(e) => onSeccionChange(e.target.value)}
             className="min-w-40 border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-3.5 focus:bg-slate-900 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer hover:border-cyan-500/30"
           >
-            <option value="todos" className="bg-slate-900">Todas las secciones</option>
-            {["A", "B", "C", "D", "E", "F"].map((s) => (
+           <option value="todos" className="bg-slate-900">Todas las secciones</option>
+           {["A", "B", "C", "D", "E", "F"].map((s) => (
                 <option key={s} value={s} className="bg-slate-900">Sección {s}</option>
-            ))}
+                ))}
+<option value="ÚNICA" className="bg-slate-900">Sección Única (Inicial)</option>
           </select>
         </div>
 
