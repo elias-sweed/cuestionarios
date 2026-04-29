@@ -9,22 +9,18 @@ import { useAuth } from "./hooks/useAuth"
 import type { Estudiante } from "./types"
 import DotField from "./components/DotField"
 
-const STUDENT_SESSION_KEY = "estudiante_activo"
-
 function App() {
-  const [estudiante, setEstudiante] = useState<Estudiante | null>(() => {
-    const saved = localStorage.getItem(STUDENT_SESSION_KEY)
-    return saved ? JSON.parse(saved) : null
-  })
+  // Cambio: Ahora el estado inicial siempre es null, sin revisar localStorage
+  const [estudiante, setEstudiante] = useState<Estudiante | null>(null)
+  
   const { session, loading } = useAuth()
   const path = window.location.pathname
 
+  // Cambio: Solo actualizamos el estado en memoria, sin guardar en localStorage
   const handleEstudianteSuccess = (est: Estudiante) => {
-    localStorage.setItem(STUDENT_SESSION_KEY, JSON.stringify(est))
     setEstudiante(est)
   }
 
-  // Función para renderizar el contenido según el estado
   const renderContent = () => {
     if (path === "/admin/login") {
       if (loading) return <div className="text-white text-center mt-20">Cargando...</div>
@@ -57,9 +53,8 @@ function App() {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#0a0f1a]">
-      {/* 1. Detector de Internet (Bloqueo total) */}
       <OfflineDetector />
-      {/* CAPA DE FONDO GLOBAL */}
+      
       <div className="fixed inset-0 z-0">
         <DotField
           dotRadius={1.2}
@@ -71,14 +66,12 @@ function App() {
           cursorRadius={400}
           cursorForce={0.15}
           bulgeOnly
-          /* Colores ajustados a Azul Neón para combinar con el Rayo */
           gradientFrom="#2563eb" 
           gradientTo="#1e3a8a"
           glowColor="#0f172a"
         />
       </div>
 
-      {/* CAPA DE CONTENIDO */}
       <div className="relative z-10 w-full min-h-screen">
         {renderContent()}
       </div>
