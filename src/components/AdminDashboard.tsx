@@ -331,12 +331,14 @@ export default function AdminDashboard() {
             </p>
           </div>
 
-          {activeTab !== "eliminar" && (
-            <DashboardFilters
-              grado={gradoFiltro} seccion={seccionFiltro} total={dataFiltrada.length}
-              onGradoChange={setGradoFiltro} onSeccionChange={setSeccionFiltro} dataFiltrada={dataFiltrada}
-            />
-          )}
+{activeTab !== "eliminar" && (
+  <div className="flex flex-col sm:flex-row items-end gap-3">
+    <DashboardFilters
+      grado={gradoFiltro} seccion={seccionFiltro} total={dataFiltrada.length}
+      onGradoChange={setGradoFiltro} onSeccionChange={setSeccionFiltro} dataFiltrada={dataFiltrada}
+    />
+  </div>
+)}
         </header>
 
         <div className="animate-fade-in">
