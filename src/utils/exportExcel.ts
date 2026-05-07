@@ -467,6 +467,152 @@ analisis.forEach((preg: any, pregIdx: number) => {
   wsPreguntas.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
 
   // ══════════════════════════════════════════════════════════════════════════
+  // HOJA GRÁFICO — DISTRIBUCIÓN VISUAL (barras en celdas)
+  // ══════════════════════════════════════════════════════════════════════════
+  const wsGrafico = workbook.addWorksheet('📈 Gráficos')
+  wsGrafico.getColumn('A').width = 3
+  wsGrafico.getColumn('B').width = 26   // etiqueta
+  wsGrafico.getColumn('C').width = 50   // barra visual
+  wsGrafico.getColumn('D').width = 12   // valor
+  wsGrafico.getColumn('E').width = 12   // porcentaje
+  wsGrafico.getColumn('F').width = 3
+
+  // ── Paleta de colores para barras ──
+  const PALETA_BARRAS = [
+    COLOR.azulMedio,    // 2E75B6
+    COLOR.verdeMedio,   // 70AD47
+    COLOR.naranjaMedio, // ED7D31
+    'C55A11',           // naranja quemado
+    '7030A0',           // morado
+    'C00000',           // rojo oscuro
+    '00B0F0',           // celeste
+    'FFD966',           // amarillo
+  ]
+
+  // ── Título de sección: EMOCIONES ──
+  let rowG = 2
+
+  const pintarTituloSeccion = (texto: string, color: string) => {
+    wsGrafico.mergeCells(`B${rowG}:E${rowG}`)
+    const t = wsGrafico.getCell(`B${rowG}`)
+    t.value = texto
+    t.font  = { bold: true, size: 13, name: 'Arial', color: { argb: COLOR.blanco } }
+    t.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } }
+    t.alignment = { horizontal: 'center', vertical: 'middle' }
+    t.border = { top: { style: 'medium' }, bottom: { style: 'medium' }, left: { style: 'medium' }, right: { style: 'medium' } }
+    wsGrafico.getRow(rowG).height = 26
+    rowG++
+  }
+
+  const pintarEncabezadoGrafico = () => {
+    ;(['B', 'C', 'D', 'E'] as const).forEach((col, ci) => {
+      const c = wsGrafico.getCell(`${col}${rowG}`)
+      c.value = ['Categoría', 'Distribución (barra)', 'N°', '%'][ci]
+      c.font  = { bold: true, size: 10, name: 'Arial', color: { argb: '404040' } }
+      c.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR.grisMedio } }
+      c.alignment = { horizontal: ci === 0 ? 'left' : 'center', vertical: 'middle' }
+      c.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
+    })
+    wsGrafico.getRow(rowG).height = 18
+    rowG++
+  }
+
+  /** Dibuja una fila de barra: label | ████░░░░ | valor | % */
+  const pintarFilaBarra = (
+    label: string,
+    valor: number,
+    total: number,
+    colorBarra: string,
+    isOdd: boolean,
+  ) => {
+    const pct      = total > 0 ? valor / total : 0
+    const MAX_CHAR = 40
+    const llenos   = Math.round(pct * MAX_CHAR)
+    const vacios   = MAX_CHAR - llenos
+    const barra    = '█'.repeat(llenos) + '░'.repeat(vacios)
+    const pctStr   = (pct * 100).toFixed(1) + '%'
+    const bg       = isOdd ? COLOR.grisClaro : COLOR.blanco
+
+    // Etiqueta
+    const cLabel = wsGrafico.getCell(`B${rowG}`)
+    cLabel.value = label
+    cLabel.font  = { name: 'Arial', size: 10 }
+    cLabel.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }
+    cLabel.alignment = { vertical: 'middle', horizontal: 'left' }
+    cLabel.border = { top: { style: 'hair' }, bottom: { style: 'hair' }, left: { style: 'hair' }, right: { style: 'hair' } }
+
+    // Barra visual (coloreada)
+    const cBarra = wsGrafico.getCell(`C${rowG}`)
+    cBarra.value = barra
+    cBarra.font  = { name: 'Courier New', size: 10, color: { argb: colorBarra }, bold: true }
+    cBarra.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }
+    cBarra.alignment = { vertical: 'middle', horizontal: 'left' }
+    cBarra.border = { top: { style: 'hair' }, bottom: { style: 'hair' }, left: { style: 'hair' }, right: { style: 'hair' } }
+
+    // Valor
+    const cVal = wsGrafico.getCell(`D${rowG}`)
+    cVal.value = valor
+    cVal.font  = { name: 'Arial', size: 10, bold: true }
+    cVal.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }
+    cVal.alignment = { vertical: 'middle', horizontal: 'center' }
+    cVal.border = { top: { style: 'hair' }, bottom: { style: 'hair' }, left: { style: 'hair' }, right: { style: 'hair' } }
+
+    // Porcentaje
+    const cPct = wsGrafico.getCell(`E${rowG}`)
+    cPct.value = pctStr
+    cPct.font  = { name: 'Arial', size: 10, color: { argb: colorBarra }, bold: true }
+    cPct.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }
+    cPct.alignment = { vertical: 'middle', horizontal: 'center' }
+    cPct.border = { top: { style: 'hair' }, bottom: { style: 'hair' }, left: { style: 'hair' }, right: { style: 'hair' } }
+
+    wsGrafico.getRow(rowG).height = 20
+    rowG++
+  }
+
+  // ── GRÁFICO 1: Emociones predominantes ──
+  const emocionesG = emocionesPredominantes(dataFiltrada)
+  const totalEmoG  = emocionesG.reduce((s: number, e: any) => s + e.value, 0)
+
+  pintarTituloSeccion('😊 EMOCIONES PREDOMINANTES', COLOR.naranjaMedio)
+  pintarEncabezadoGrafico()
+  emocionesG.slice(0, 10).forEach((e: any, i: number) => {
+    pintarFilaBarra(e.name, e.value, totalEmoG, PALETA_BARRAS[i % PALETA_BARRAS.length], i % 2 === 0)
+  })
+
+  rowG++ // espacio
+
+  // ── GRÁFICO 2: Participación por grado ──
+  const gradosG   = agruparPorGrado(dataFiltrada)
+  const totalGradG = gradosG.reduce((s: number, g: any) => s + g.value, 0)
+
+  pintarTituloSeccion('🎓 PARTICIPACIÓN POR GRADO', COLOR.azulMedio)
+  pintarEncabezadoGrafico()
+  gradosG.forEach((g: any, i: number) => {
+    const label = g.name === '0' ? 'Inicial' : `${g.name}° grado`
+    pintarFilaBarra(label, g.value, totalGradG, PALETA_BARRAS[i % PALETA_BARRAS.length], i % 2 === 0)
+  })
+
+  rowG++ // espacio
+
+  // ── GRÁFICO 3: Distribución "pastel" simulado (tabla con % y bloques de color) ──
+  pintarTituloSeccion('🥧 DISTRIBUCIÓN EMOCIONAL (simulado pastel)', COLOR.verdeMedio)
+
+  wsGrafico.mergeCells(`B${rowG}:E${rowG}`)
+  const notaPastel = wsGrafico.getCell(`B${rowG}`)
+  notaPastel.value = 'Proporción relativa de cada emoción sobre el total de respuestas emocionales'
+  notaPastel.font  = { italic: true, size: 9, name: 'Arial', color: { argb: '666666' } }
+  notaPastel.alignment = { horizontal: 'center' }
+  wsGrafico.getRow(rowG).height = 16
+  rowG++
+
+  pintarEncabezadoGrafico()
+  emocionesG.slice(0, 8).forEach((e: any, i: number) => {
+    pintarFilaBarra(e.name, e.value, totalEmoG, PALETA_BARRAS[i % PALETA_BARRAS.length], i % 2 === 0)
+  })
+
+  wsGrafico.views = [{ state: 'frozen', xSplit: 0, ySplit: 0 }]
+
+  // ══════════════════════════════════════════════════════════════════════════
   // HOJA 4 — EMOCIONES
   // ══════════════════════════════════════════════════════════════════════════
   const wsEmociones = workbook.addWorksheet('😊 Emociones')

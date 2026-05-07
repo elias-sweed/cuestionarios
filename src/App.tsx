@@ -4,6 +4,7 @@ import PreguntasScreen from "./components/PreguntasScreen"
 import CuestionarioInicial from "./components/CuestionarioInicial"
 import AdminDashboard from "./components/AdminDashboard"
 import AdminLogin from "./components/admin/AdminLogin"
+import AdminNivelSelector from "./components/admin/AdminNivelSelector"
 import OfflineDetector from "./components/OfflineDetector"
 import { useAuth } from "./hooks/useAuth"
 import type { Estudiante } from "./types"
@@ -25,10 +26,47 @@ function App() {
     if (path === "/admin/login") {
       if (loading) return <div className="text-white text-center mt-20">Cargando...</div>
       if (session) {
-        window.location.replace("/admin")
+        window.location.replace("/admin/seleccion")
         return null
       }
       return <AdminLogin />
+    }
+
+    if (path === "/admin/seleccion") {
+      if (loading) return <div className="text-white text-center mt-20">Cargando...</div>
+      if (!session) {
+        window.location.replace("/admin/login")
+        return null
+      }
+      return <AdminNivelSelector />
+    }
+
+    if (path === "/admin") {
+      if (loading) return <div className="text-white text-center mt-20">Cargando...</div>
+      if (!session) {
+        window.location.replace("/admin/login")
+        return null
+      }
+      window.location.replace("/admin/seleccion")
+      return null
+    }
+
+    if (path === "/admin/inicial/dashboard") {
+      if (loading) return <div className="text-white text-center mt-20">Cargando...</div>
+      if (!session) {
+        window.location.replace("/admin/login")
+        return null
+      }
+      return <AdminDashboard nivel="inicial" />
+    }
+
+    if (path === "/admin/primaria/dashboard") {
+      if (loading) return <div className="text-white text-center mt-20">Cargando...</div>
+      if (!session) {
+        window.location.replace("/admin/login")
+        return null
+      }
+      return <AdminDashboard nivel="primaria" />
     }
 
     if (path.startsWith("/admin")) {
@@ -37,7 +75,7 @@ function App() {
         window.location.replace("/admin/login")
         return null
       }
-      return <AdminDashboard />
+      return <AdminDashboard nivel="primaria" />
     }
 
     if (!estudiante) {

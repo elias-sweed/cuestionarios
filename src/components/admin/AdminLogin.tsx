@@ -17,7 +17,7 @@ export default function AdminLogin() {
 
     try {
       await login(email, password)
-      window.location.href = "/admin"
+      window.location.href = "/admin/seleccion"
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message)

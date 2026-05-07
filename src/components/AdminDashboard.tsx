@@ -144,12 +144,15 @@ function ModalEliminar({
 }
 
 // ── Componente principal ─────────────────────────────────────────────────────
-export default function AdminDashboard() {
+type NivelDashboard = "primaria" | "inicial"
+
+export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDashboard }) {
   const [data, setData] = useState<any[]>([])
   const [gradoFiltro, setGradoFiltro] = useState("todos")
   const [seccionFiltro, setSeccionFiltro] = useState("todos")
   const [activeTab, setActiveTab] = useState("stats")
   const [sidebarAbierto, setSidebarAbierto] = useState(true)
+  const esDashboardInicial = nivel === "inicial"
 
   // Estado para el modal de eliminar
   const [alumnoAEliminar, setAlumnoAEliminar] = useState<{
@@ -177,15 +180,21 @@ export default function AdminDashboard() {
       const grado = est?.grado != null ? String(est.grado).trim() : "sin_grado"
       const seccion = est?.seccion ? String(est.seccion).trim().toUpperCase() : ""
 
+      const esNivelValido = esDashboardInicial
+        ? grado === "0"
+        : ["1", "2", "3", "4", "5", "6"].includes(grado)
+      if (!esNivelValido) return false
+
+      const esPrimaria = ["1", "2", "3", "4", "5", "6"].includes(grado)
       const pasaGrado = gradoFiltro === "todos" || grado === String(gradoFiltro).trim()
-
-      const esInicial = grado === "0"
       const pasaSeccion = seccionFiltro === "todos"
-        || (esInicial ? false : seccion === seccionFiltro.toUpperCase())
+        || (esDashboardInicial
+          ? (seccionFiltro === "ÚNICA" && seccion === "ÚNICA")
+          : seccion === seccionFiltro.toUpperCase())
 
-      return pasaGrado && pasaSeccion
+      return (esDashboardInicial ? true : esPrimaria) && pasaGrado && pasaSeccion
     })
-  }, [data, gradoFiltro, seccionFiltro])
+  }, [data, gradoFiltro, seccionFiltro, esDashboardInicial])
 
   // ── Función para eliminar respuestas ──────────────────────────────────────
  const handleEliminar = async (modo: "respuestas" | "completo") => {
@@ -260,6 +269,17 @@ export default function AdminDashboard() {
 
         {/* Navegación */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+          <SidebarItem
+            icon={<LayoutDashboard className="w-5 h-5 shrink-0" />}
+            label={esDashboardInicial ? "Dashboard Primaria" : "Dashboard Inicial"}
+            active={false}
+            onClick={() => {
+              window.location.href = esDashboardInicial
+                ? "/admin/primaria/dashboard"
+                : "/admin/inicial/dashboard"
+            }}
+            collapsed={!sidebarAbierto}
+          />
           <SidebarItem icon={<BarChart3 className="w-5 h-5 shrink-0" />} label="Estadísticas" active={activeTab === "stats"} onClick={() => setActiveTab("stats")} collapsed={!sidebarAbierto} />
           <SidebarItem icon={<FileText className="w-5 h-5 shrink-0" />} label="Frecuencias" active={activeTab === "questions"} onClick={() => setActiveTab("questions")} collapsed={!sidebarAbierto} />
           <SidebarItem icon={<AlertTriangle className="w-5 h-5 shrink-0" />} label="Riesgo (1-20)" active={activeTab === "risk"} onClick={() => setActiveTab("risk")} collapsed={!sidebarAbierto} />
@@ -366,6 +386,7 @@ export default function AdminDashboard() {
           {activeTab === "eliminar" && (
             <TablaEliminar
               data={data}
+              nivel={nivel}
               onSolicitarEliminar={(alumno) => setAlumnoAEliminar(alumno)}
             />
           )}
@@ -386,9 +407,11 @@ export default function AdminDashboard() {
 // ── Tabla de alumnos con botón eliminar ──────────────────────────────────────
 function TablaEliminar({
   data,
+  nivel,
   onSolicitarEliminar,
 }: {
   data: any[]
+  nivel: NivelDashboard
   onSolicitarEliminar: (alumno: { nombres: string; apellidos: string; estudiante_id: string }) => void
 }) {
   const [busqueda, setBusqueda] = useState("")
@@ -405,6 +428,11 @@ function TablaEliminar({
       const id = item.estudiante_id
       if (!id) return
       const est = Array.isArray(item.estudiantes) ? item.estudiantes[0] : item.estudiantes
+      const gradoEstudiante = est?.grado != null ? String(est.grado).trim() : ""
+      const esGradoValido = nivel === "inicial"
+        ? gradoEstudiante === "0"
+        : ["1", "2", "3", "4", "5", "6"].includes(gradoEstudiante)
+      if (!esGradoValido) return
       if (!mapa[id]) {
         mapa[id] = {
           nombres: est?.nombres || "—",
@@ -419,7 +447,7 @@ function TablaEliminar({
     return Object.entries(mapa)
       .map(([id, v]) => ({ estudiante_id: id, ...v }))
       .sort((a, b) => `${a.apellidos}${a.nombres}`.localeCompare(`${b.apellidos}${b.nombres}`))
-  }, [data])
+  }, [data, nivel])
 
   // Detectar duplicados
   const duplicados = useMemo(() => {
@@ -506,11 +534,19 @@ function TablaEliminar({
             onChange={e => setGradoFiltro(e.target.value)}
             className="min-w-36 border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer hover:border-cyan-500/30"
           >
-            <option value="todos" className="bg-slate-900">Todos los grados</option>
-            <option value="0" className="bg-slate-900">Inicial (5 años)</option>
-            {[1, 2, 3, 4, 5, 6].map(g => (
-              <option key={g} value={String(g)} className="bg-slate-900">{g}° Grado</option>
-            ))}
+            {nivel === "inicial" ? (
+              <>
+                <option value="todos" className="bg-slate-900">Inicial</option>
+                <option value="0" className="bg-slate-900">Inicial (5 años)</option>
+              </>
+            ) : (
+              <>
+                <option value="todos" className="bg-slate-900">Todos los grados</option>
+                {[1, 2, 3, 4, 5, 6].map(g => (
+                  <option key={g} value={String(g)} className="bg-slate-900">{g}° Grado</option>
+                ))}
+              </>
+            )}
           </select>
         </div>
 
@@ -525,10 +561,13 @@ function TablaEliminar({
             className="min-w-36 border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer hover:border-cyan-500/30"
           >
             <option value="todos" className="bg-slate-900">Todas las secciones</option>
-            {["A", "B", "C", "D", "E", "F"].map(s => (
-              <option key={s} value={s} className="bg-slate-900">Sección {s}</option>
-            ))}
-            <option value="ÚNICA" className="bg-slate-900">Sección Única (Inicial)</option>
+            {nivel === "inicial" ? (
+              <option value="ÚNICA" className="bg-slate-900">Sección Única</option>
+            ) : (
+              ["A", "B", "C", "D", "E", "F"].map(s => (
+                <option key={s} value={s} className="bg-slate-900">Sección {s}</option>
+              ))
+            )}
           </select>
         </div>
 
@@ -687,7 +726,7 @@ function TablaEliminar({
 
                     <td className="px-4 py-4">
                       <span className="text-cyan-400 font-black">
-                        {alumno.grado === "0" ? "Inicial" : `${alumno.grado}°`}
+                        {nivel === "inicial" ? "Inicial" : `${alumno.grado}°`}
                       </span>
                       <span className="text-slate-500 font-bold ml-2">Sec. {alumno.seccion}</span>
                     </td>
@@ -858,6 +897,7 @@ function SidebarItem({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       title={collapsed ? label : undefined}
       className={`
