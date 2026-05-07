@@ -1,4 +1,5 @@
-import { Inbox, ShieldAlert } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Inbox, ShieldAlert, ChevronLeft, ChevronRight } from "lucide-react"
 
 interface Props {
   alumnos: any[]
@@ -6,6 +7,15 @@ interface Props {
 }
 
 export default function DashboardRiesgoTable({ alumnos, totalData }: Props) {
+  const [page, setPage] = useState(1)
+  const itemsPerPage = 20
+  const totalPages = Math.max(1, Math.ceil(alumnos.length / itemsPerPage))
+  const paginatedAlumnos = alumnos.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
+
   return (
     <div className="bg-slate-900/50 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
@@ -33,14 +43,14 @@ export default function DashboardRiesgoTable({ alumnos, totalData }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {alumnos.map((alumno) => (
+              {paginatedAlumnos.map((alumno) => (
                 <tr key={alumno.estudiante_id} className="hover:bg-white/2 transition-colors">
                   <td className="px-6 py-4 font-bold text-slate-300">
                     {alumno.nombres} {alumno.apellidos}
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className="bg-cyan-500/10 text-cyan-400 px-3 py-1 rounded-lg font-bold text-xs border border-cyan-500/20">
-                      {alumno.grado}° "{alumno.seccion}"
+                      {String(alumno.grado) === "0" ? "Inicial" : `${alumno.grado}°`} "{alumno.seccion}"
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">
@@ -71,6 +81,30 @@ export default function DashboardRiesgoTable({ alumnos, totalData }: Props) {
             <p className="text-xl font-black uppercase tracking-[0.2em] opacity-40">Sin Registros</p>
           </div>
         )}
+      </div>
+
+      <div className="flex justify-between items-center mt-6">
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+          Mostrando {paginatedAlumnos.length} de {alumnos.length} alumnos en riesgo
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 transition-all"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 transition-all"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react"
+import { createPortal } from "react-dom"
 import { getRespuestasDashboard } from "../services/dashboard.service"
 import { logout } from "../services/auth.service"
 import { supabase } from "../lib/supabaseClient"
@@ -234,6 +235,41 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
   }
 }
 
+ const handleEliminarMasivo = async (
+  alumnos: { nombres: string; apellidos: string; estudiante_id: string }[],
+  modo: "respuestas" | "completo"
+ ) => {
+  if (alumnos.length === 0) return
+  const ids = alumnos.map(a => a.estudiante_id)
+  setEliminando(true)
+  try {
+    const { error: errorResp } = await supabase
+      .from("respuestas")
+      .delete()
+      .in("estudiante_id", ids)
+    if (errorResp) throw errorResp
+
+    if (modo === "completo") {
+      const { error: errorEst } = await supabase
+        .from("estudiantes")
+        .delete()
+        .in("id", ids)
+      if (errorEst) throw errorEst
+    }
+
+    const msg = modo === "completo"
+      ? `Se eliminaron completamente ${alumnos.length} alumnos.`
+      : `Se eliminaron las respuestas de ${alumnos.length} alumnos.`
+    setMensajeExito(msg)
+    setTimeout(() => setMensajeExito(""), 4000)
+    await cargar()
+  } catch (err) {
+    console.error("Error en eliminación masiva:", err)
+  } finally {
+    setEliminando(false)
+  }
+ }
+
   return (
     <div className="flex h-screen bg-[#050505] text-white font-sans overflow-hidden">
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -387,6 +423,8 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
             <TablaEliminar
               data={data}
               nivel={nivel}
+              eliminando={eliminando}
+              onEliminarMasivo={handleEliminarMasivo}
               onSolicitarEliminar={(alumno) => setAlumnoAEliminar(alumno)}
             />
           )}
@@ -408,10 +446,17 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
 function TablaEliminar({
   data,
   nivel,
+  eliminando,
+  onEliminarMasivo,
   onSolicitarEliminar,
 }: {
   data: any[]
   nivel: NivelDashboard
+  eliminando: boolean
+  onEliminarMasivo: (
+    alumnos: { nombres: string; apellidos: string; estudiante_id: string }[],
+    modo: "respuestas" | "completo"
+  ) => Promise<void>
   onSolicitarEliminar: (alumno: { nombres: string; apellidos: string; estudiante_id: string }) => void
 }) {
   const [busqueda, setBusqueda] = useState("")
@@ -420,6 +465,8 @@ function TablaEliminar({
   const [seccionFiltro, setSeccionFiltro] = useState("todos")
   const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set())
   const [modalMasivo, setModalMasivo] = useState(false)
+  const [page, setPage] = useState(1)
+  const itemsPerPage = 20
 
   // Construir lista única de alumnos con conteo de respuestas
   const alumnos = useMemo(() => {
@@ -496,6 +543,7 @@ function TablaEliminar({
   // Limpiar selección cuando cambia el filtro
   useEffect(() => {
     setSeleccionados(new Set())
+    setPage(1)
   }, [gradoFiltro, seccionFiltro, soloDuplicados, busqueda])
 
   const todosSeleccionados = filtrados.length > 0 && filtrados.every(a => seleccionados.has(a.estudiante_id))
@@ -517,6 +565,12 @@ function TablaEliminar({
   }
 
   const alumnosSeleccionados = alumnos.filter(a => seleccionados.has(a.estudiante_id))
+  const totalPages = Math.max(1, Math.ceil(filtrados.length / itemsPerPage))
+  const filtradosPaginados = filtrados.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
 
   return (
     <div className="space-y-4">
@@ -674,7 +728,7 @@ function TablaEliminar({
               </tr>
             </thead>
             <tbody>
-              {filtrados.map((alumno, i) => {
+              {filtradosPaginados.map((alumno, i) => {
                 const esDuplicado = duplicados.has(alumno.estudiante_id)
                 const estaSeleccionado = seleccionados.has(alumno.estudiante_id)
                 return (
@@ -766,14 +820,43 @@ function TablaEliminar({
         </div>
       </div>
 
+      <div className="flex justify-between items-center mt-2">
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+          Mostrando {filtradosPaginados.length} de {filtrados.length} alumnos
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            disabled={page === 1}
+            onClick={() => setPage(p => p - 1)}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 transition-all"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            disabled={page >= totalPages}
+            onClick={() => setPage(p => p + 1)}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 transition-all"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
       {/* ── MODAL ELIMINACIÓN MASIVA ───────────────────────────────── */}
       {modalMasivo && (
         <ModalMasivo
           alumnos={alumnosSeleccionados}
-          onConfirm={() => {
-            // Disparar eliminación uno por uno usando la misma lógica individual
-            alumnosSeleccionados.forEach(a =>
-              onSolicitarEliminar({ nombres: a.nombres, apellidos: a.apellidos, estudiante_id: a.estudiante_id })
+          loading={eliminando}
+          onConfirm={async (modo) => {
+            await onEliminarMasivo(
+              alumnosSeleccionados.map(a => ({
+                nombres: a.nombres,
+                apellidos: a.apellidos,
+                estudiante_id: a.estudiante_id,
+              })),
+              modo
             )
             setModalMasivo(false)
             setSeleccionados(new Set())
@@ -788,18 +871,22 @@ function TablaEliminar({
 // ── Modal confirmación eliminación masiva ────────────────────────────────────
 function ModalMasivo({
   alumnos,
+  loading,
   onConfirm,
   onCancel,
 }: {
   alumnos: { nombres: string; apellidos: string; estudiante_id: string }[]
+  loading: boolean
   onConfirm: (modo: "respuestas" | "completo") => void
   onCancel: () => void
 }) {
   const [modo, setModo] = useState<"respuestas" | "completo">("respuestas")
 
-  return (
+  if (typeof document === "undefined") return null
+
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-red-500/30 rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl shadow-red-500/10">
+      <div className="bg-slate-900 border border-red-500/30 rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl shadow-red-500/10 z-[70]">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-red-500/10 rounded-xl">
             <AlertCircle className="w-6 h-6 text-red-400" />
@@ -814,7 +901,9 @@ function ModalMasivo({
           {alumnos.map(a => (
             <div key={a.estudiante_id} className="flex items-center gap-2 bg-slate-800/50 rounded-xl px-3 py-2">
               <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
-              <span className="text-white text-xs font-bold capitalize">{a.nombres} {a.apellidos}</span>
+              <span className="text-white text-xs font-bold capitalize">
+                {a.nombres} {a.apellidos} ({a.estudiante_id.slice(0, 8)}…)
+              </span>
             </div>
           ))}
         </div>
@@ -823,7 +912,9 @@ function ModalMasivo({
         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">¿Qué deseas eliminar?</p>
         <div className="space-y-2 mb-5">
           <button
+            type="button"
             onClick={() => setModo("respuestas")}
+            disabled={loading}
             className={`w-full flex items-start gap-3 p-3.5 rounded-2xl border text-left transition-all ${
               modo === "respuestas"
                 ? "bg-orange-500/10 border-orange-500/40 text-orange-300"
@@ -841,7 +932,9 @@ function ModalMasivo({
             </div>
           </button>
           <button
+            type="button"
             onClick={() => setModo("completo")}
+            disabled={loading}
             className={`w-full flex items-start gap-3 p-3.5 rounded-2xl border text-left transition-all ${
               modo === "completo"
                 ? "bg-red-500/10 border-red-500/40 text-red-300"
@@ -862,25 +955,36 @@ function ModalMasivo({
 
         <div className="flex gap-3">
           <button
+            type="button"
             onClick={onCancel}
+            disabled={loading}
             className="flex-1 py-3 rounded-2xl border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 font-bold text-sm transition-all"
           >
             Cancelar
           </button>
           <button
+            type="button"
             onClick={() => onConfirm(modo)}
+            disabled={loading}
             className={`flex-1 py-3 rounded-2xl font-black text-sm transition-all border flex items-center justify-center gap-2 ${
               modo === "completo"
                 ? "bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border-red-500/30"
                 : "bg-orange-500/20 hover:bg-orange-500 text-orange-400 hover:text-white border-orange-500/30"
             }`}
           >
-            <Trash2 className="w-4 h-4" />
-            {modo === "completo" ? "Eliminar todo" : "Eliminar respuestas"}
+            {loading ? (
+              <span className="animate-pulse">Eliminando...</span>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                {modo === "completo" ? "Eliminar todo" : "Eliminar respuestas"}
+              </>
+            )}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

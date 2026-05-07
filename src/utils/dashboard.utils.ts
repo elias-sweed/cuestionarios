@@ -40,8 +40,12 @@ export const emocionesPredominantes = (data: any[]) => {
   const conteo: Record<string, number> = {}
   data.forEach((item) => {
     const r = item.respuesta
-    if (typeof r === "string" && r.length <= 2) {
-      conteo[r] = (conteo[r] || 0) + 1
+    const tipoPregunta = String(item.preguntas?.tipo || "").toLowerCase().trim()
+    if (tipoPregunta !== "emocion") return
+
+    if (typeof r === "string" && r.trim()) {
+      const emocion = r.trim()
+      conteo[emocion] = (conteo[emocion] || 0) + 1
     }
   })
   return Object.entries(conteo).map(([name, value]) => ({ name, value }))

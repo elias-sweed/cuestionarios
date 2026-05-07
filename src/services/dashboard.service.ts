@@ -24,7 +24,9 @@ export const getRespuestasDashboard = async () => {
         ),
         preguntas (
           texto,
-          nivel
+          nivel,
+          orden,
+          tipo
         )
       `)
       .order('fecha', { ascending: false })
