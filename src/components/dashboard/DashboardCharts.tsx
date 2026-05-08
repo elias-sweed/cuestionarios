@@ -38,7 +38,7 @@ export default function DashboardCharts({ porGrado, porSeccion, emociones }: Pro
                 />
                 <Tooltip 
                   cursor={{fill: 'rgba(255,255,255,0.05)'}} 
-                  formatter={(value: number) => [value, "Cantidad de respuestas"]}
+                  formatter={(value) => [Number(value ?? 0), "Cantidad de respuestas"]}
                   labelFormatter={(label) => `Grado: ${label}`}
                   contentStyle={{
                     backgroundColor: '#0f172a',
@@ -85,7 +85,7 @@ export default function DashboardCharts({ porGrado, porSeccion, emociones }: Pro
                   ))}
                 </Pie>
                 <Tooltip 
-                  formatter={(value: number) => [value, "Cantidad de respuestas"]}
+                  formatter={(value) => [Number(value ?? 0), "Cantidad de respuestas"]}
                   labelFormatter={(label) => `Sección: ${label}`}
                   contentStyle={{
                     backgroundColor: '#0f172a',
@@ -131,7 +131,7 @@ export default function DashboardCharts({ porGrado, porSeccion, emociones }: Pro
                 ))}
               </Pie>
               <Tooltip 
-                formatter={(value: number) => [value, "Frecuencia"]}
+                formatter={(value) => [Number(value ?? 0), "Frecuencia"]}
                 labelFormatter={(label) => `Emoción: ${label}`}
                 contentStyle={{
                   backgroundColor: '#0f172a',

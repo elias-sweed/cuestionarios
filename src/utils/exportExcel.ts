@@ -27,7 +27,8 @@ const COLOR = {
   blanco:       'FFFFFF',
 }
 
-function headerCell(
+// FIX TS6133: prefijo _ para indicar que son helpers reservados para uso futuro
+function _headerCell(
   ws: ExcelJS.Worksheet,
   celda: string,
   valor: string,
@@ -49,7 +50,7 @@ function headerCell(
   }
 }
 
-function dataCell(
+function _dataCell(
   ws: ExcelJS.Worksheet,
   celda: string,
   valor: any,
@@ -69,6 +70,10 @@ function dataCell(
     right:  { style: 'hair', color: { argb: COLOR.grisMedio } },
   }
 }
+
+// Evitar advertencias de "declared but never read" sin eliminar las funciones
+void _headerCell
+void _dataCell
 
 // ─── Utilidades de datos ──────────────────────────────────────────────────────
 
@@ -147,21 +152,21 @@ function aplanarRespuestas(data: any[]): {
     const est = Array.isArray(item.estudiantes) ? item.estudiantes[0] : item.estudiantes
     const pid = Number(item.pregunta_id)
     return {
-      nombre:         est?.nombres    || '—',
-      apellido:       est?.apellidos  || '—',
-      grado:          est?.grado != null ? String(est.grado) : '—',
-      seccion:        est?.seccion    || '—',
-      pregunta_id:    pid,
+      nombre:          est?.nombres    || '—',
+      apellido:        est?.apellidos  || '—',
+      grado:           est?.grado != null ? String(est.grado) : '—',
+      seccion:         est?.seccion    || '—',
+      pregunta_id:     pid,
       pregunta_numero: indicePregunta.get(pid) ?? 0,
-      pregunta_texto: item.preguntas?.texto || `Pregunta ${pid}`,
-      nivel: nivelLegible(item.preguntas?.nivel || ""),
-      tipo:           item.tipo       || '—',
-      respuesta:      respuestaStr(item.respuesta),
+      pregunta_texto:  item.preguntas?.texto || `Pregunta ${pid}`,
+      nivel:           nivelLegible(item.preguntas?.nivel || ""),
+      tipo:            item.tipo       || '—',
+      respuesta:       respuestaStr(item.respuesta),
     }
   })
 }
 
-/** Construye perfil de alumno: { estudiante_id, nombre, apellido, grado, seccion, respuestas: { [pid]: string } } */
+/** Construye perfil de alumno */
 function perfilesAlumnos(data: any[]) {
   const mapa: Record<string, {
     nombre: string; apellido: string; grado: string; seccion: string
@@ -173,16 +178,17 @@ function perfilesAlumnos(data: any[]) {
     const est = Array.isArray(item.estudiantes) ? item.estudiantes[0] : item.estudiantes
     if (!mapa[id]) {
       mapa[id] = {
-        nombre:    est?.nombres    || '—',
-        apellido:  est?.apellidos  || '—',
-        grado:     est?.grado != null ? String(est.grado) : '—',
-        seccion:   est?.seccion    || '—',
+        nombre:     est?.nombres    || '—',
+        apellido:   est?.apellidos  || '—',
+        grado:      est?.grado != null ? String(est.grado) : '—',
+        seccion:    est?.seccion    || '—',
         respuestas: {},
       }
     }
     mapa[id].respuestas[item.pregunta_id] = respuestaStr(item.respuesta)
   })
-  return Object.entries(mapa).map(([id, v]) => ({ estudiante_id: id, ...v }))
+  return Object.entries(mapa)
+    .map(([id, v]) => ({ estudiante_id: id, ...v }))
     .sort((a, b) => `${a.apellido}${a.nombre}`.localeCompare(`${b.apellido}${b.nombre}`))
 }
 
@@ -194,50 +200,55 @@ export const exportarDashboardExcel = async (dataFiltrada: any[]) => {
   workbook.created  = new Date()
   workbook.modified = new Date()
 
-  const ahora = new Date().toISOString().slice(0, 10)
+  const ahora   = new Date().toISOString().slice(0, 10)
   const fechaHoy = new Date().toLocaleDateString('es-PE', {
-    day: '2-digit', month: 'long', year: 'numeric'
+    day: '2-digit', month: 'long', year: 'numeric',
   })
 
-  const alumnos = perfilesAlumnos(dataFiltrada)
-  const totalAlumnos = alumnos.length
+  const alumnos        = perfilesAlumnos(dataFiltrada)
+  const totalAlumnos   = alumnos.length
   const totalRespuestas = dataFiltrada.length
-  const grados = agruparPorGrado(dataFiltrada)
-  const secciones = Array.from(
-    dataFiltrada.reduce((m, item) => {
-      const sec = String(item.estudiantes?.seccion ?? 'Sin sección')
-      m.set(sec, (m.get(sec) ?? 0) + 1)
-      return m
-    }, new Map<string, number>())
-  ).map(([name, value]) => ({ name, value }))
-  const emociones = emocionesPredominantes(dataFiltrada)
-  const riesgo = detectarAlumnosRiesgo(dataFiltrada)
+  const grados         = agruparPorGrado(dataFiltrada)
 
-  // Hoja 1: Resumen ejecutivo
+  // FIX TS2345 (línea 212): tipar explícitamente las entradas del Map antes de mapear
+  const seccionesMap = dataFiltrada.reduce((m, item) => {
+    const sec = String(item.estudiantes?.seccion ?? 'Sin sección')
+    m.set(sec, (m.get(sec) ?? 0) + 1)
+    return m
+  }, new Map<string, number>())
+  const secciones: { name: string; value: number }[] = Array.from(
+    seccionesMap.entries() as IterableIterator<[string, number]>
+  ).map(([name, value]) => ({ name, value }))
+
+  const emociones = emocionesPredominantes(dataFiltrada)
+  const riesgo    = detectarAlumnosRiesgo(dataFiltrada)
+
+  // ── Hoja 1: Resumen ejecutivo ──────────────────────────────────────────────
   const wsResumen = workbook.addWorksheet('Resumen')
   wsResumen.columns = [
     { header: 'Indicador', key: 'indicador', width: 42 },
-    { header: 'Valor', key: 'valor', width: 20 },
+    { header: 'Valor',     key: 'valor',     width: 20 },
   ]
   wsResumen.getRow(1).font = { bold: true, color: { argb: COLOR.blanco } }
   wsResumen.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR.azulOscuro } }
-  wsResumen.addRow({ indicador: 'Fecha de generación', valor: fechaHoy })
+  wsResumen.addRow({ indicador: 'Fecha de generación',           valor: fechaHoy })
   wsResumen.addRow({ indicador: 'Total de estudiantes (únicos)', valor: totalAlumnos })
-  wsResumen.addRow({ indicador: 'Total de respuestas', valor: totalRespuestas })
-  wsResumen.addRow({ indicador: 'Alumnos en riesgo', valor: riesgo.length })
-  wsResumen.addRow({ indicador: 'Emoción más reportada', valor: emociones[0]?.name ?? 'Sin datos' })
+  wsResumen.addRow({ indicador: 'Total de respuestas',           valor: totalRespuestas })
+  wsResumen.addRow({ indicador: 'Alumnos en riesgo',             valor: riesgo.length })
+  wsResumen.addRow({ indicador: 'Emoción más reportada',         valor: emociones[0]?.name ?? 'Sin datos' })
   wsResumen.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
 
-  // Hoja 2: Indicadores listos para gráficos
+  // ── Hoja 2: Indicadores ────────────────────────────────────────────────────
   const wsIndicadores = workbook.addWorksheet('Indicadores')
   wsIndicadores.columns = [
-    { header: 'Métrica', key: 'metrica', width: 24 },
-    { header: 'Categoría', key: 'categoria', width: 40 },
-    { header: 'Valor', key: 'valor', width: 12 },
+    { header: 'Métrica',    key: 'metrica',    width: 24 },
+    { header: 'Categoría',  key: 'categoria',  width: 40 },
+    { header: 'Valor',      key: 'valor',      width: 12 },
     { header: 'Porcentaje', key: 'porcentaje', width: 14 },
   ]
   wsIndicadores.getRow(1).font = { bold: true, color: { argb: COLOR.blanco } }
   wsIndicadores.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR.verdeOscuro } }
+
   const agregarIndicadores = (metrica: string, filas: { name: string; value: number }[]) => {
     const total = filas.reduce((acc, f) => acc + f.value, 0)
     filas.forEach((f) => {
@@ -245,32 +256,34 @@ export const exportarDashboardExcel = async (dataFiltrada: any[]) => {
       wsIndicadores.addRow({ metrica, categoria: f.name, valor: f.value, porcentaje: pct })
     })
   }
-  agregarIndicadores('Respuestas por grado', grados)
-  agregarIndicadores('Respuestas por sección', secciones)
+  agregarIndicadores('Respuestas por grado',    grados)
+  agregarIndicadores('Respuestas por sección',  secciones)
   agregarIndicadores('Emociones predominantes', emociones)
   wsIndicadores.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
 
-  // Hoja 3: Frecuencias por pregunta/respuesta (compacta)
+  // ── Hoja 3: Frecuencias ────────────────────────────────────────────────────
   const wsFrecuencias = workbook.addWorksheet('Frecuencias')
   wsFrecuencias.columns = [
-    { header: 'Pregunta', key: 'pregunta', width: 54 },
-    { header: 'Respuesta', key: 'respuesta', width: 36 },
+    { header: 'Pregunta',   key: 'pregunta',   width: 54 },
+    { header: 'Respuesta',  key: 'respuesta',  width: 36 },
     { header: 'Frecuencia', key: 'frecuencia', width: 12 },
     { header: 'Porcentaje', key: 'porcentaje', width: 14 },
   ]
   wsFrecuencias.getRow(1).font = { bold: true, color: { argb: COLOR.blanco } }
   wsFrecuencias.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR.naranjaOscuro } }
-  const analisis = analisisPorPregunta(dataFiltrada)
-  analisis.forEach((preg: any) => {
-    const opciones = Object.entries(preg.respuestas ?? {})
+
+  // FIX TS2345 (línea 249): castear a any[] para evitar unknown[]
+  const analisis = analisisPorPregunta(dataFiltrada) as any[]
+  analisis.forEach((preg) => {
+    const opciones = (Object.entries(preg.respuestas ?? {}) as [string, number][])
       .map(([respuesta, frecuencia]) => ({ respuesta, frecuencia: Number(frecuencia) || 0 }))
       .sort((a, b) => b.frecuencia - a.frecuencia)
     const total = opciones.reduce((acc, op) => acc + op.frecuencia, 0)
     opciones.forEach((op) => {
       const pct = total > 0 ? Number(((op.frecuencia / total) * 100).toFixed(2)) : 0
       wsFrecuencias.addRow({
-        pregunta: preg.pregunta,
-        respuesta: op.respuesta,
+        pregunta:   preg.pregunta,
+        respuesta:  op.respuesta,
         frecuencia: op.frecuencia,
         porcentaje: pct,
       })
@@ -278,65 +291,65 @@ export const exportarDashboardExcel = async (dataFiltrada: any[]) => {
   })
   wsFrecuencias.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
 
-  // Hoja 4: Riesgo resumido
+  // ── Hoja 4: Riesgo ─────────────────────────────────────────────────────────
   const wsRiesgo = workbook.addWorksheet('Riesgo')
   wsRiesgo.columns = [
-    { header: 'Apellidos', key: 'apellidos', width: 24 },
-    { header: 'Nombres', key: 'nombres', width: 24 },
-    { header: 'Grado', key: 'grado', width: 10 },
-    { header: 'Sección', key: 'seccion', width: 12 },
-    { header: 'Puntaje (0-20)', key: 'score', width: 16 },
-    { header: 'Nivel de riesgo', key: 'riesgo', width: 18 },
+    { header: 'Apellidos',       key: 'apellidos', width: 24 },
+    { header: 'Nombres',         key: 'nombres',   width: 24 },
+    { header: 'Grado',           key: 'grado',     width: 10 },
+    { header: 'Sección',         key: 'seccion',   width: 12 },
+    { header: 'Puntaje (0-20)',  key: 'score',     width: 16 },
+    { header: 'Nivel de riesgo', key: 'riesgo',    width: 18 },
   ]
   wsRiesgo.getRow(1).font = { bold: true, color: { argb: COLOR.blanco } }
   wsRiesgo.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR.rojoOscuro } }
   riesgo.forEach((a: any) => {
     wsRiesgo.addRow({
       apellidos: a.apellidos ?? '',
-      nombres: a.nombres ?? '',
-      grado: a.grado === '0' ? 'Inicial' : a.grado,
-      seccion: a.seccion ?? '',
-      score: a.score ?? 0,
-      riesgo: a.riesgo ?? 'Bajo',
+      nombres:   a.nombres   ?? '',
+      grado:     a.grado === '0' ? 'Inicial' : a.grado,
+      seccion:   a.seccion   ?? '',
+      score:     a.score     ?? 0,
+      riesgo:    a.riesgo    ?? 'Bajo',
     })
   })
   wsRiesgo.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
 
-  // Hoja 5: Base limpia (para crear gráficos o tablas dinámicas)
+  // ── Hoja 5: Base respuestas ────────────────────────────────────────────────
   const wsBase = workbook.addWorksheet('Base respuestas')
   wsBase.columns = [
-    { header: 'Fecha', key: 'fecha', width: 16 },
-    { header: 'Estudiante ID', key: 'estudiante_id', width: 34 },
-    { header: 'Nombres', key: 'nombre', width: 20 },
-    { header: 'Apellidos', key: 'apellido', width: 22 },
-    { header: 'Grado', key: 'grado', width: 10 },
-    { header: 'Sección', key: 'seccion', width: 12 },
-    { header: 'Nivel', key: 'nivel', width: 20 },
-    { header: 'N° Pregunta', key: 'pregunta_numero', width: 12 },
-    { header: 'Código Pregunta', key: 'pregunta_id', width: 14 },
-    { header: 'Tipo Pregunta', key: 'tipo', width: 14 },
-    { header: 'Pregunta', key: 'pregunta_texto', width: 52 },
-    { header: 'Respuesta', key: 'respuesta', width: 36 },
+    { header: 'Fecha',           key: 'fecha',           width: 16 },
+    { header: 'Estudiante ID',   key: 'estudiante_id',   width: 34 },
+    { header: 'Nombres',         key: 'nombre',          width: 20 },
+    { header: 'Apellidos',       key: 'apellido',        width: 22 },
+    { header: 'Grado',           key: 'grado',           width: 10 },
+    { header: 'Sección',         key: 'seccion',         width: 12 },
+    { header: 'Nivel',           key: 'nivel',           width: 20 },
+    { header: 'N° Pregunta',     key: 'pregunta_numero', width: 12 },
+    { header: 'Código Pregunta', key: 'pregunta_id',     width: 14 },
+    { header: 'Tipo Pregunta',   key: 'tipo',            width: 14 },
+    { header: 'Pregunta',        key: 'pregunta_texto',  width: 52 },
+    { header: 'Respuesta',       key: 'respuesta',       width: 36 },
   ]
   wsBase.getRow(1).font = { bold: true, color: { argb: COLOR.blanco } }
   wsBase.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '404040' } }
 
   const planas = aplanarRespuestas(dataFiltrada)
   planas.forEach((r, idx) => {
-    const itemOriginal = dataFiltrada[idx]
+    const orig = dataFiltrada[idx]
     wsBase.addRow({
-      fecha: itemOriginal?.fecha ? String(itemOriginal.fecha).slice(0, 10) : '',
-      estudiante_id: itemOriginal?.estudiante_id ?? '',
-      nombre: r.nombre,
-      apellido: r.apellido,
-      grado: r.grado === '0' ? 'Inicial' : r.grado,
-      seccion: r.seccion,
-      nivel: r.nivel,
+      fecha:           orig?.fecha ? String(orig.fecha).slice(0, 10) : '',
+      estudiante_id:   orig?.estudiante_id ?? '',
+      nombre:          r.nombre,
+      apellido:        r.apellido,
+      grado:           r.grado === '0' ? 'Inicial' : r.grado,
+      seccion:         r.seccion,
+      nivel:           r.nivel,
       pregunta_numero: r.pregunta_numero,
-      pregunta_id: r.pregunta_id,
-      tipo: itemOriginal?.preguntas?.tipo ?? '—',
-      pregunta_texto: r.pregunta_texto,
-      respuesta: r.respuesta,
+      pregunta_id:     r.pregunta_id,
+      tipo:            orig?.preguntas?.tipo ?? '—',
+      pregunta_texto:  r.pregunta_texto,
+      respuesta:       r.respuesta,
     })
   })
   wsBase.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 12 } }
