@@ -886,7 +886,7 @@ function ModalMasivo({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-red-500/30 rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl shadow-red-500/10 z-[70]">
+      <div className="bg-slate-900 border border-red-500/30 rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl shadow-red-500/10 z-70">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-red-500/10 rounded-xl">
             <AlertCircle className="w-6 h-6 text-red-400" />
