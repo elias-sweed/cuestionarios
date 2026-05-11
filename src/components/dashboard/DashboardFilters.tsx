@@ -36,7 +36,6 @@ export default function DashboardFilters({ grado, seccion, total, onGradoChange,
             className="min-w-40 border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-3.5 focus:bg-slate-900 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer hover:border-cyan-500/30"
           >
             <option value="todos" className="bg-slate-900">Todos los grados</option>
-            <option value="0" className="bg-slate-900">Inicial (5 años)</option> 
             {[1, 2, 3, 4, 5, 6].map((g) => (
                 <option key={g} value={String(g)} className="bg-slate-900">{g}° Grado</option>
             ))}
@@ -57,7 +56,6 @@ export default function DashboardFilters({ grado, seccion, total, onGradoChange,
            {["A", "B", "C", "D", "E", "F"].map((s) => (
                 <option key={s} value={s} className="bg-slate-900">Sección {s}</option>
                 ))}
-<option value="ÚNICA" className="bg-slate-900">Sección Única (Inicial)</option>
           </select>
         </div>
 
