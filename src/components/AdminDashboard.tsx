@@ -8,7 +8,8 @@ import {
   agruparPorSeccion,
   analisisPorPregunta,
   emocionesPredominantes,
-  detectarAlumnosRiesgo
+  detectarAlumnosRiesgo,
+  detectarAlumnosRiesgoInicial
 } from "../utils/dashboard.utils"
 
 import DashboardFilters from "./dashboard/DashboardFilters"
@@ -392,6 +393,7 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
     <DashboardFilters
       grado={gradoFiltro} seccion={seccionFiltro} total={dataFiltrada.length}
       onGradoChange={setGradoFiltro} onSeccionChange={setSeccionFiltro} dataFiltrada={dataFiltrada}
+      nivel={nivel}
     />
   </div>
 )}
@@ -410,7 +412,7 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
           )}
           {activeTab === "risk" && (
             <DashboardRiesgoTable
-              alumnos={detectarAlumnosRiesgo(dataFiltrada)}
+              alumnos={esDashboardInicial ? detectarAlumnosRiesgoInicial(dataFiltrada) : detectarAlumnosRiesgo(dataFiltrada)}
               totalData={dataFiltrada.length}
             />
           )}
