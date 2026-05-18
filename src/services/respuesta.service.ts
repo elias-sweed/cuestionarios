@@ -6,5 +6,5 @@ export const guardarRespuesta = async (data: Respuesta) => {
     .from("respuestas")
     .insert([data])
 
-  if (error) throw error
+    if (error) throw error
 }

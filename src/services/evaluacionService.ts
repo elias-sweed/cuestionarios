@@ -31,7 +31,8 @@ export const guardarEvaluacionInicialDB = async (
   }
 
   const { error } = await supabase.from("respuestas").insert(payload);
+
   if (error) throw error;
-  
+
   return true;
 };

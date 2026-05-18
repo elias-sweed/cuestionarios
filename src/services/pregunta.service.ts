@@ -7,7 +7,7 @@ export const obtenerPreguntasPorNivel = async (nivel: string) => {
     .eq("nivel", nivel)
     .order("orden")
 
-  if (error) throw error
+    if (error) throw error
 
   return data
 }
