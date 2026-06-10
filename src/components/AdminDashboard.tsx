@@ -13,6 +13,7 @@ import {
 } from "../utils/dashboard.utils"
 
 import DashboardFilters from "./dashboard/DashboardFilters"
+import { exportarExcelPorGrados } from "../utils/exportExcelPorGrados"
 import DashboardCharts from "./dashboard/DashboardCharts"
 import DashboardRiesgoTable from "./dashboard/DashboardRiesgoTable"
 import DashboardPreguntas from "./dashboard/DashboardPreguntas"
@@ -395,6 +396,16 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
       onGradoChange={setGradoFiltro} onSeccionChange={setSeccionFiltro} dataFiltrada={dataFiltrada}
       nivel={nivel}
     />
+    <button
+      onClick={() => exportarExcelPorGrados(data, nivel)}
+      className="group px-5 py-3.5 bg-cyan-500/10 hover:bg-cyan-500 text-cyan-400 hover:text-white font-black rounded-2xl flex items-center gap-2 border border-cyan-500/20 transition-all duration-300 shadow-lg shadow-cyan-500/5 active:scale-95"
+      title="Exportar reporte organizado por grados y secciones"
+    >
+      <svg className="w-5 h-5 group-hover:-translate-y-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      <span className="text-xs tracking-widest uppercase">Por Grados</span>
+    </button>
   </div>
 )}
         </header>
