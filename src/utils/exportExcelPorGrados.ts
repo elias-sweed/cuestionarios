@@ -161,13 +161,13 @@ export const exportarExcelPorGrados = async (data: any[], nivel: 'primaria' | 'i
     if (ests.length === 0) return
 
     const ws = workbook.addWorksheet(`${grado}° Grado`)
-    ws.setColumnWidth(1, 5)
-    ws.setColumnWidth(2, 10)
-    ws.setColumnWidth(3, 26)
-    ws.setColumnWidth(4, 26)
-    ws.setColumnWidth(5, 16)
-    ws.setColumnWidth(6, 16)
-    ws.setColumnWidth(7, 12)
+    const wsc1 = ws.getColumn(1); wsc1.width = 5
+    const wsc2 = ws.getColumn(2); wsc2.width = 10
+    const wsc3 = ws.getColumn(3); wsc3.width = 26
+    const wsc4 = ws.getColumn(4); wsc4.width = 26
+    const wsc5 = ws.getColumn(5); wsc5.width = 16
+    const wsc6 = ws.getColumn(6); wsc6.width = 16
+    const wsc7 = ws.getColumn(7); wsc7.width = 12
 
     const hRow = ws.addRow(['#', 'Sección', 'Apellidos', 'Nombres', 'Puntaje (0-20)', 'Nivel Riesgo', 'Total Respuestas'])
     hRow.eachCell((cell) => {
@@ -237,7 +237,6 @@ async function exportarExcelPorGradosInicial(data: any[]) {
   })
 
   const alumnosRiesgo = detectarAlumnosRiesgoInicial(data) as any[]
-  const riesgoMap = new Map(alumnosRiesgo.map((a: any) => [a.estudiante_id, a]))
 
   const estudianteMap = new Map<string, any>()
   data.forEach((item: any) => {
@@ -266,12 +265,12 @@ async function exportarExcelPorGradosInicial(data: any[]) {
   ws.addRow(['Total estudiantes', estudianteMap.size])
   ws.addRow([])
 
-  ws.setColumnWidth(1, 5)
-  ws.setColumnWidth(2, 26)
-  ws.setColumnWidth(3, 26)
-  ws.setColumnWidth(4, 16)
-  ws.setColumnWidth(5, 18)
-  ws.setColumnWidth(6, 18)
+  const wsic1 = ws.getColumn(1); wsic1.width = 5
+  const wsic2 = ws.getColumn(2); wsic2.width = 26
+  const wsic3 = ws.getColumn(3); wsic3.width = 26
+  const wsic4 = ws.getColumn(4); wsic4.width = 16
+  const wsic5 = ws.getColumn(5); wsic5.width = 18
+  const wsic6 = ws.getColumn(6); wsic6.width = 18
 
   const hRow = ws.addRow(['#', 'Apellidos', 'Nombres', 'Puntaje (0-20)', 'Nivel Riesgo', 'Estado'])
   hRow.eachCell((cell) => {
