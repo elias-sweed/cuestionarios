@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react"
-import { Search, ChevronLeft, ChevronRight, User, X, Eye, Filter } from "lucide-react"
+import { Search, ChevronLeft, ChevronRight, Filter, Users } from "lucide-react"
+import { detectarAlumnosRiesgo, detectarAlumnosRiesgoInicial } from "../../utils/dashboard.utils"
 
 interface Props {
   data: any[]
@@ -10,12 +11,17 @@ export default function DashboardAlumnosPorGrado({ data, nivel }: Props) {
   const esInicial = nivel === "inicial"
   const [grado, setGrado] = useState("")
   const [seccion, setSeccion] = useState("")
-  const [alumnoId, setAlumnoId] = useState<string | null>(null)
   const [busqueda, setBusqueda] = useState("")
   const [page, setPage] = useState(1)
-  const itemsPerPage = 15
+  const itemsPerPage = 25
 
-  // Extraer estudiantes únicos con sus datos
+  // Calcular riesgo de todos los alumnos
+  const alumnosConRiesgo = useMemo(() => {
+    const raw = esInicial ? detectarAlumnosRiesgoInicial(data) : detectarAlumnosRiesgo(data)
+    return new Map((raw as any[]).map((a: any) => [a.estudiante_id, a]))
+  }, [data, esInicial])
+
+  // Extraer estudiantes únicos con resumen
   const estudiantesUnicos = useMemo(() => {
     const mapa = new Map<string, any>()
     data.forEach((item: any) => {
@@ -25,14 +31,7 @@ export default function DashboardAlumnosPorGrado({ data, nivel }: Props) {
       const g = est?.grado != null ? String(est.grado).trim() : ""
       const s = (est?.seccion || "").toUpperCase()
       if (esInicial ? g !== "0" : !["1", "2", "3", "4", "5", "6"].includes(g)) return
-      mapa.set(id, {
-        id,
-        nombres: est?.nombres || "",
-        apellidos: est?.apellidos || "",
-        grado: g,
-        seccion: s,
-        totalRespuestas: 0,
-      })
+      mapa.set(id, { id, nombres: est?.nombres || "", apellidos: est?.apellidos || "", grado: g, seccion: s, totalRespuestas: 0 })
     })
     data.forEach((item: any) => {
       const id = item.estudiante_id
@@ -43,61 +42,46 @@ export default function DashboardAlumnosPorGrado({ data, nivel }: Props) {
 
   const gradosDisponibles = useMemo(() => {
     const set = new Set(estudiantesUnicos.map((e: any) => e.grado))
-    return esInicial ? ["0"] : ["1", "2", "3", "4", "5", "6"].filter(g => set.has(g))
+    return esInicial ? ["0"] : ["1", "2", "3", "4", "5", "6"].filter((g) => set.has(g))
   }, [estudiantesUnicos, esInicial])
 
   const seccionesDisponibles = useMemo(() => {
-    const set = new Set(
-      estudiantesUnicos
-        .filter((e: any) => !grado || e.grado === grado)
-        .map((e: any) => e.seccion)
-    )
+    const set = new Set(estudiantesUnicos.filter((e: any) => !grado || e.grado === grado).map((e: any) => e.seccion))
     return Array.from(set).sort()
   }, [estudiantesUnicos, grado])
 
-  // Lista de estudiantes filtrada por grado + sección + búsqueda
   const estudiantesFiltrados = useMemo(() => {
     let lista = estudiantesUnicos
     if (grado) lista = lista.filter((e: any) => e.grado === grado)
     if (seccion) lista = lista.filter((e: any) => e.seccion === seccion)
     if (busqueda.trim()) {
       const q = busqueda.toLowerCase()
-      lista = lista.filter(
-        (e: any) =>
-          e.nombres.toLowerCase().includes(q) || e.apellidos.toLowerCase().includes(q)
-      )
+      lista = lista.filter((e: any) => e.nombres.toLowerCase().includes(q) || e.apellidos.toLowerCase().includes(q))
     }
     return lista.sort((a: any, b: any) => a.apellidos.localeCompare(b.apellidos))
   }, [estudiantesUnicos, grado, seccion, busqueda])
 
   const totalPages = Math.max(1, Math.ceil(estudiantesFiltrados.length / itemsPerPage))
-  const estudiantesPagina = estudiantesFiltrados.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  )
+  const estudiantesPagina = estudiantesFiltrados.slice((page - 1) * itemsPerPage, page * itemsPerPage)
 
-  // Respuestas del alumno seleccionado
-  const respuestasAlumno = useMemo(() => {
-    if (!alumnoId) return []
-    return data
-      .filter((item: any) => item.estudiante_id === alumnoId)
-      .map((item: any) => ({
-        preguntaId: item.pregunta_id,
-        texto: item.preguntas?.texto || `Pregunta ${item.pregunta_id}`,
-        tipo: item.preguntas?.tipo || "",
-        respuesta: item.respuesta,
-        fecha: item.fecha ? String(item.fecha).slice(0, 10) : "",
-      }))
-  }, [data, alumnoId])
+  // Reset page on filter change
+  const handleGradoChange = (v: string) => { setGrado(v); setSeccion(""); setPage(1) }
+  const handleSeccionChange = (v: string) => { setSeccion(v); setPage(1) }
+  const handleBusquedaChange = (v: string) => { setBusqueda(v); setPage(1) }
 
-  const alumnoSeleccionado = useMemo(
-    () => estudiantesUnicos.find((e: any) => e.id === alumnoId) || null,
-    [estudiantesUnicos, alumnoId]
-  )
-
-  const handleSelectAlumno = (id: string) => {
-    setAlumnoId((prev) => (prev === id ? null : id))
-  }
+  // Contadores de riesgo
+  const resumenRiesgo = useMemo(() => {
+    const filtrados = estudiantesFiltrados
+    let bajo = 0, medio = 0, alto = 0, sinDatos = 0
+    filtrados.forEach((e: any) => {
+      const r = alumnosConRiesgo.get(e.id)
+      if (!r) { sinDatos++; return }
+      if (r.riesgo === "Alto") alto++
+      else if (r.riesgo === "Medio") medio++
+      else bajo++
+    })
+    return { bajo, medio, alto, sinDatos, total: filtrados.length }
+  }, [estudiantesFiltrados, alumnosConRiesgo])
 
   return (
     <div className="space-y-6">
@@ -111,208 +95,175 @@ export default function DashboardAlumnosPorGrado({ data, nivel }: Props) {
               </label>
               <select
                 value={grado}
-                onChange={(e) => { setGrado(e.target.value); setSeccion(""); setPage(1); setAlumnoId(null) }}
+                onChange={(e) => handleGradoChange(e.target.value)}
                 className="min-w-36 border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer"
               >
                 <option value="">Seleccionar grado</option>
                 {gradosDisponibles.map((g) => (
-                  <option key={g} value={g} className="bg-slate-900">
-                    {g}° Grado
-                  </option>
+                  <option key={g} value={g} className="bg-slate-900">{g}° Grado</option>
                 ))}
               </select>
             </div>
           )}
-
           <div className="space-y-1.5">
             <label className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
               <Filter className="w-3 h-3 text-cyan-500" /> Sección
             </label>
             <select
               value={seccion}
-              onChange={(e) => { setSeccion(e.target.value); setPage(1); setAlumnoId(null) }}
+              onChange={(e) => handleSeccionChange(e.target.value)}
               disabled={!grado && !esInicial}
               className="min-w-36 border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer disabled:opacity-40"
             >
               <option value="">{esInicial ? "Única" : "Seleccionar sección"}</option>
               {seccionesDisponibles.map((s) => (
-                <option key={s} value={s} className="bg-slate-900">
-                  {esInicial ? "Sección Única" : `Sección ${s}`}
-                </option>
+                <option key={s} value={s} className="bg-slate-900">{esInicial ? "Sección Única" : `Sección ${s}`}</option>
               ))}
             </select>
           </div>
-
           <div className="flex-1 min-w-48 space-y-1.5">
             <label className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-              <Search className="w-3 h-3 text-cyan-500" /> Buscar alumno
+              <Search className="w-3 h-3 text-cyan-500" /> Buscar
             </label>
             <input
-              type="text"
-              placeholder="Nombre o apellido..."
-              value={busqueda}
-              onChange={(e) => { setBusqueda(e.target.value); setPage(1) }}
+              type="text" placeholder="Nombre o apellido..."
+              value={busqueda} onChange={(e) => handleBusquedaChange(e.target.value)}
               className="w-full bg-slate-950/50 border border-white/10 text-white placeholder-slate-600 rounded-2xl px-4 py-2.5 text-sm font-medium outline-none focus:ring-2 focus:ring-cyan-500/40 transition-all"
             />
           </div>
-
-          {(grado || esInicial) && seccion && (
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl self-end">
-              <User className="w-4 h-4 text-cyan-400" />
-              <span className="text-cyan-400 font-bold text-sm">
-                {estudiantesFiltrados.length} alumno{estudiantesFiltrados.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* ── CONTENIDO PRINCIPAL ──────────────────────────── */}
-      <div className="grid grid-cols-1 gap-6" style={{ gridTemplateColumns: alumnoId ? "1fr 1fr" : "1fr" }}>
-        {/* LISTA DE ALUMNOS */}
-        <div className="bg-slate-900/50 backdrop-blur-xl rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden">
-          <div className="p-5 border-b border-white/5 flex items-center justify-between">
-            <h3 className="text-sm font-black text-white tracking-tight flex items-center gap-2">
-              <User className="w-4 h-4 text-cyan-400" />
-              {esInicial ? "Alumnos - Inicial" : grado && seccion ? `Alumnos - ${grado}° "${seccion}"` : "Alumnos"}
-            </h3>
-            {alumnoId && (
-              <button
-                onClick={() => setAlumnoId(null)}
-                className="text-xs text-slate-500 hover:text-white font-bold flex items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-white/5 transition-all"
-              >
-                <X className="w-3 h-3" /> Cerrar detalle
-              </button>
-            )}
+      {/* ── TARJETA DE RESUMEN ───────────────────────────── */}
+      {(grado || esInicial) && seccion && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-white/5 px-4 py-3">
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total</p>
+            <p className="text-2xl font-black text-white mt-1">{resumenRiesgo.total}</p>
           </div>
-
-          {(!grado && !esInicial) || !seccion ? (
-            <div className="p-12 text-center text-slate-600 font-bold text-sm">
-              {esInicial
-                ? "Selecciona una sección para ver los alumnos"
-                : "Selecciona un grado y sección para ver los alumnos"}
-            </div>
-          ) : estudiantesPagina.length === 0 ? (
-            <div className="p-12 text-center text-slate-600 font-bold text-sm">
-              No hay alumnos en {grado ? `${grado}°` : ""} {seccion ? `"${seccion}"` : ""}
-            </div>
-          ) : (
-            <div className="divide-y divide-white/5">
-              {estudiantesPagina.map((est: any) => (
-                <button
-                  key={est.id}
-                  onClick={() => handleSelectAlumno(est.id)}
-                  className={`w-full flex items-center justify-between px-5 py-4 text-left transition-all hover:bg-white/3 ${
-                    alumnoId === est.id ? "bg-cyan-500/10 border-l-2 border-cyan-400" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${
-                      alumnoId === est.id
-                        ? "bg-cyan-500/20 text-cyan-400"
-                        : "bg-slate-800 text-slate-500"
-                    }`}>
-                      {est.apellidos.charAt(0)}{est.nombres.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-sm text-white truncate capitalize">
-                        {est.nombres} {est.apellidos}
-                      </p>
-                      <p className="text-[10px] text-slate-600 font-mono mt-0.5">
-                        {est.grado !== "0" ? `${est.grado}° ` : ""}{est.seccion} · {est.totalRespuestas} respuestas
-                      </p>
-                    </div>
-                  </div>
-                  <Eye className={`w-4 h-4 shrink-0 ${
-                    alumnoId === est.id ? "text-cyan-400" : "text-slate-600"
-                  }`} />
-                </button>
-              ))}
+          <div className="bg-emerald-500/5 backdrop-blur-xl rounded-2xl border border-emerald-500/10 px-4 py-3">
+            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Bajo</p>
+            <p className="text-2xl font-black text-emerald-400 mt-1">{resumenRiesgo.bajo}</p>
+          </div>
+          <div className="bg-amber-500/5 backdrop-blur-xl rounded-2xl border border-amber-500/10 px-4 py-3">
+            <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest">Medio</p>
+            <p className="text-2xl font-black text-amber-400 mt-1">{resumenRiesgo.medio}</p>
+          </div>
+          <div className="bg-red-500/5 backdrop-blur-xl rounded-2xl border border-red-500/10 px-4 py-3">
+            <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">Alto</p>
+            <p className="text-2xl font-black text-red-400 mt-1">{resumenRiesgo.alto}</p>
+          </div>
+          {resumenRiesgo.sinDatos > 0 && (
+            <div className="bg-slate-700/20 backdrop-blur-xl rounded-2xl border border-slate-600/20 px-4 py-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sin datos</p>
+              <p className="text-2xl font-black text-slate-400 mt-1">{resumenRiesgo.sinDatos}</p>
             </div>
           )}
+        </div>
+      )}
 
-          {estudiantesFiltrados.length > itemsPerPage && (
+      {/* ── TABLA DE ALUMNOS ─────────────────────────────── */}
+      <div className="bg-slate-900/50 backdrop-blur-xl rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden">
+        {(!grado && !esInicial) || !seccion ? (
+          <div className="p-16 text-center text-slate-600 font-bold text-sm">
+            <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
+            {esInicial ? "Selecciona una sección para ver los alumnos" : "Selecciona un grado y sección para ver los alumnos"}
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-900/80 border-b border-white/5">
+                    <th className="px-4 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center w-10">#</th>
+                    <th className="px-4 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Apellidos</th>
+                    <th className="px-4 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Nombres</th>
+                    <th className="px-4 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Grado</th>
+                    <th className="px-4 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Sección</th>
+                    <th className="px-4 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Resp.</th>
+                    <th className="px-4 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Puntaje</th>
+                    <th className="px-4 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Riesgo</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {estudiantesPagina.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-12 text-center text-slate-600 font-bold">
+                        No hay alumnos en {grado ? `${grado}°` : ""} {seccion ? `"${seccion}"` : ""}
+                      </td>
+                    </tr>
+                  ) : (
+                    estudiantesPagina.map((est: any, i: number) => {
+                      const riesgo = alumnosConRiesgo.get(est.id)
+                      const score = riesgo?.score ?? 0
+                      const nivelRiesgo = riesgo?.riesgo ?? "—"
+
+                      return (
+                        <tr key={est.id} className="hover:bg-white/2 transition-colors">
+                          <td className="px-4 py-3 text-center text-slate-500 font-bold text-xs">
+                            {(page - 1) * itemsPerPage + i + 1}
+                          </td>
+                          <td className="px-4 py-3 font-bold text-slate-300 capitalize">{est.apellidos}</td>
+                          <td className="px-4 py-3 text-slate-300 capitalize">{est.nombres}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="text-cyan-400 font-black text-xs">
+                              {est.grado === "0" ? "Inicial" : `${est.grado}°`}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="text-slate-400 font-bold text-xs">"{est.seccion}"</span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="bg-slate-800 text-slate-300 font-bold text-xs px-2 py-1 rounded-lg">
+                              {est.totalRespuestas}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="text-white font-black text-sm">{score}</span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {nivelRiesgo !== "—" ? (
+                              <span className={`inline-block px-2.5 py-1 rounded-lg font-black text-[10px] uppercase tracking-wider border ${
+                                nivelRiesgo === "Alto" ? "bg-red-500/10 text-red-400 border-red-500/30" :
+                                nivelRiesgo === "Medio" ? "bg-amber-500/10 text-amber-400 border-amber-500/30" :
+                                "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                              }`}>
+                                {nivelRiesgo}
+                              </span>
+                            ) : (
+                              <span className="text-slate-600 text-xs">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
             <div className="flex justify-between items-center px-5 py-4 border-t border-white/5">
-              <p className="text-xs font-bold text-slate-500">
-                {estudiantesFiltrados.length} alumnos
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                Mostrando {estudiantesPagina.length} de {estudiantesFiltrados.length} alumnos
               </p>
               <div className="flex gap-2">
                 <button
                   disabled={page === 1}
                   onClick={() => setPage((p) => p - 1)}
-                  className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 transition-all"
+                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 transition-all"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
-                  className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 transition-all"
+                  className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white disabled:opacity-30 transition-all"
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* ── DETALLE DEL ALUMNO ──────────────────────────── */}
-        {alumnoId && alumnoSeleccionado && (
-          <div className="bg-slate-900/50 backdrop-blur-xl rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden">
-            <div className="p-5 border-b border-white/5">
-              <h3 className="text-sm font-black text-white capitalize flex items-center gap-2">
-                <User className="w-4 h-4 text-cyan-400" />
-                {alumnoSeleccionado.nombres} {alumnoSeleccionado.apellidos}
-              </h3>
-              <p className="text-[10px] text-slate-500 font-bold mt-1">
-                {alumnoSeleccionado.grado !== "0"
-                  ? `${alumnoSeleccionado.grado}° Grado · Sección ${alumnoSeleccionado.seccion}`
-                  : "Inicial (5 años)"}
-                {" · "}
-                {respuestasAlumno.length} respuesta{respuestasAlumno.length !== 1 ? "s" : ""}
-              </p>
-            </div>
-
-            <div className="divide-y divide-white/5 max-h-96 overflow-y-auto">
-              {respuestasAlumno.length === 0 ? (
-                <div className="p-8 text-center text-slate-600 font-bold text-sm">
-                  No hay respuestas registradas para este alumno.
-                </div>
-              ) : (
-                respuestasAlumno.map((r: any, i: number) => (
-                  <div key={i} className="px-5 py-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-slate-400 font-bold mb-1">
-                          Pregunta #{r.preguntaId}
-                          {r.tipo && (
-                            <span className="ml-2 text-[10px] uppercase tracking-wider text-cyan-500/60">
-                              {r.tipo}
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-sm text-white font-medium leading-snug">
-                          {r.texto}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <span className="inline-block bg-slate-800 text-white px-3 py-1.5 rounded-xl text-xs font-bold leading-tight max-w-48 wrap-break-word">
-                          {typeof r.respuesta === "string"
-                            ? r.respuesta
-                            : Array.isArray(r.respuesta)
-                              ? r.respuesta.join(", ")
-                              : JSON.stringify(r.respuesta)}
-                        </span>
-                        {r.fecha && (
-                          <p className="text-[10px] text-slate-600 mt-1">{r.fecha}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          </>
         )}
       </div>
     </div>
