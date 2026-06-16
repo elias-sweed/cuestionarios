@@ -296,7 +296,7 @@ export default function DashboardAlumnosPorGrado({ data, nivel }: Props) {
                         </p>
                       </div>
                       <div className="shrink-0 text-right">
-                        <span className="inline-block bg-slate-800 text-white px-3 py-1.5 rounded-xl text-xs font-bold leading-tight max-w-48 break-words">
+                        <span className="inline-block bg-slate-800 text-white px-3 py-1.5 rounded-xl text-xs font-bold leading-tight max-w-48 wrap-break-word">
                           {typeof r.respuesta === "string"
                             ? r.respuesta
                             : Array.isArray(r.respuesta)

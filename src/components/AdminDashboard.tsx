@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react"
 import { createPortal } from "react-dom"
 import { getRespuestasDashboard } from "../services/dashboard.service"
+import { getCachedData, setCachedData, tiempoDesdeActualizacion } from "../utils/dbCache"
 import { logout } from "../services/auth.service"
 import { supabase } from "../lib/supabaseClient"
 import {
@@ -156,6 +157,8 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
   const [seccionFiltro, setSeccionFiltro] = useState("todos")
   const [activeTab, setActiveTab] = useState("stats")
   const [sidebarAbierto, setSidebarAbierto] = useState(true)
+  const [ultimaActualizacion, setUltimaActualizacion] = useState<number | null>(null)
+  const [cargandoInicial, setCargandoInicial] = useState(true)
   const esDashboardInicial = nivel === "inicial"
 
   // Estado para el modal de eliminar
@@ -169,11 +172,25 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
     try {
       const res = await getRespuestasDashboard()
       setData(res || [])
+      setCachedData(res || [])
+      setUltimaActualizacion(Date.now())
     } catch (err) { console.error(err) }
   }
 
   useEffect(() => {
+    // 1. Cargar desde caché primero (instantáneo)
+    getCachedData<any[]>().then((cache) => {
+      if (cache) {
+        setData(cache.data)
+        setUltimaActualizacion(cache.timestamp)
+      }
+      setCargandoInicial(false)
+    })
+
+    // 2. Fetch fresh data in background
     cargar()
+
+    // 3. Refresh cada 30s
     const intervalo = setInterval(() => { cargar() }, 30000)
     return () => clearInterval(intervalo)
   }, [])
@@ -387,9 +404,16 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
               {activeTab === "alumnos" && "Alumnos por Grado y Sección"}
               {activeTab === "eliminar" && "Eliminar Respuestas"}
             </h2>
-            <p className="text-cyan-400/70 font-bold text-xs tracking-[0.3em] mt-2">
-              Mostrando {dataFiltrada.length} de {data.length} registros (Límite: 10,000)
-            </p>
+            <div className="flex items-center gap-3 mt-2">
+              <p className="text-cyan-400/70 font-bold text-xs tracking-[0.3em]">
+                {cargandoInicial ? "Cargando..." : `Mostrando ${dataFiltrada.length} de ${data.length} registros`}
+              </p>
+              {ultimaActualizacion && !cargandoInicial && (
+                <p className="text-slate-600 font-bold text-[10px]">
+                  Última actualización {tiempoDesdeActualizacion(ultimaActualizacion)}
+                </p>
+              )}
+            </div>
           </div>
 
 {activeTab !== "eliminar" && (
