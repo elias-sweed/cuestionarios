@@ -18,9 +18,10 @@ import DashboardCharts from "./dashboard/DashboardCharts"
 import DashboardRiesgoTable from "./dashboard/DashboardRiesgoTable"
 import DashboardPreguntas from "./dashboard/DashboardPreguntas"
 import DashboardRawTable from "./dashboard/DashboardRawTable"
+import DashboardAlumnosPorGrado from "./dashboard/DashboardAlumnosPorGrado"
 import {
   LogOut, LayoutDashboard, Users, AlertTriangle,
-  FileText, BarChart3, ChevronLeft, ChevronRight, Trash2, X, AlertCircle, Filter
+  FileText, BarChart3, ChevronLeft, ChevronRight, Trash2, X, AlertCircle, Filter, GraduationCap
 } from "lucide-react"
 import DotField from "./DotField"
 
@@ -322,6 +323,7 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
           <SidebarItem icon={<FileText className="w-5 h-5 shrink-0" />} label="Frecuencias" active={activeTab === "questions"} onClick={() => setActiveTab("questions")} collapsed={!sidebarAbierto} />
           <SidebarItem icon={<AlertTriangle className="w-5 h-5 shrink-0" />} label="Riesgo (1-20)" active={activeTab === "risk"} onClick={() => setActiveTab("risk")} collapsed={!sidebarAbierto} />
           <SidebarItem icon={<Users className="w-5 h-5 shrink-0" />} label="Detalle Alumnos" active={activeTab === "raw"} onClick={() => setActiveTab("raw")} collapsed={!sidebarAbierto} />
+          <SidebarItem icon={<GraduationCap className="w-5 h-5 shrink-0" />} label="Alumnos por Grado" active={activeTab === "alumnos"} onClick={() => setActiveTab("alumnos")} collapsed={!sidebarAbierto} />
           
           {/* Separador */}
           <div className="pt-3 pb-1">
@@ -382,6 +384,7 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
               {activeTab === "questions" && "Análisis por Pregunta"}
               {activeTab === "risk" && "Atención Prioritaria"}
               {activeTab === "raw" && "Auditoría Completa"}
+              {activeTab === "alumnos" && "Alumnos por Grado y Sección"}
               {activeTab === "eliminar" && "Eliminar Respuestas"}
             </h2>
             <p className="text-cyan-400/70 font-bold text-xs tracking-[0.3em] mt-2">
@@ -429,6 +432,9 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
           )}
           {activeTab === "raw" && (
             <DashboardRawTable data={dataFiltrada} />
+          )}
+          {activeTab === "alumnos" && (
+            <DashboardAlumnosPorGrado data={data} nivel={nivel} />
           )}
 
           {/* ── PESTAÑA ELIMINAR ─────────────────────────────────────── */}
