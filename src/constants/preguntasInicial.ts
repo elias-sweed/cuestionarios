@@ -27,6 +27,8 @@ export const MAPEO_DB: Record<string, number> = {
   partes_intimas: 317, esfinteres: 318, dolor_zona: 319
 };
 
+export const SECCIONES_INICIAL = ["Amorosos", "Generosos", "Respetuosos", "Solidarios"]
+
 export const FACTORES_RIESGO_CONFIG = [
   { id: 'moretones', label: '¿Muestra moretones?' },
   { id: 'marcas', label: '¿Marcas enrojecidas?' },

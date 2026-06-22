@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabaseClient"
 import type { Estudiante } from "../types"
 import Lightning from './Lightning';
 import logo from "../assets/logo.png"
+import { SECCIONES_INICIAL } from "../constants/preguntasInicial"
 
 interface Props {
   onSuccess: (estudiante: Estudiante) => void
@@ -27,13 +28,9 @@ export default function FormEstudiante({ onSuccess }: Props) {
   }
 
   const handleSelection = (field: "grado" | "seccion", value: string) => {
-    if (field === "grado" && value === "0") {
-      setForm({ ...form, grado: "0", seccion: "Única" })
-    } 
-    else if (field === "grado" && value !== "0") {
+    if (field === "grado") {
       setForm({ ...form, grado: value, seccion: "" })
-    } 
-    else {
+    } else {
       setForm({ ...form, [field]: value })
     }
   }
@@ -44,8 +41,8 @@ export default function FormEstudiante({ onSuccess }: Props) {
       alert("Por favor, selecciona un grado.")
       return
     }
-    if (form.grado !== "0" && !form.seccion) {
-      alert("Por favor, selecciona una sección para Primaria.")
+    if (!form.seccion) {
+      alert("Por favor, selecciona una sección.")
       return
     }
 
@@ -199,11 +196,11 @@ export default function FormEstudiante({ onSuccess }: Props) {
               </div>
             </div>
 
-            {form.grado !== "0" && form.grado !== "" && (
+            {form.grado !== "" && (
               <div className="space-y-2 animate-fade-in">
                 <label className="text-sm font-medium text-blue-100 ml-1">Sección</label>
                 <div className="grid grid-cols-6 gap-2">
-                  {secciones.map((s) => (
+                  {(form.grado === "0" ? SECCIONES_INICIAL : secciones).map((s) => (
                     <button
                       key={s}
                       type="button"

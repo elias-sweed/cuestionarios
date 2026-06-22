@@ -115,9 +115,9 @@ export default function DashboardAlumnosPorGrado({ data, nivel }: Props) {
               disabled={!grado && !esInicial}
               className="min-w-36 border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer disabled:opacity-40"
             >
-              <option value="">{esInicial ? "Única" : "Seleccionar sección"}</option>
+              <option value="">Seleccionar sección</option>
               {seccionesDisponibles.map((s) => (
-                <option key={s} value={s} className="bg-slate-900">{esInicial ? "Sección Única" : `Sección ${s}`}</option>
+                <option key={s} value={s} className="bg-slate-900">{s}</option>
               ))}
             </select>
           </div>

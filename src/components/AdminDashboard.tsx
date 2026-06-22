@@ -4,6 +4,7 @@ import { getRespuestasDashboard } from "../services/dashboard.service"
 import { getCachedData, setCachedData, tiempoDesdeActualizacion } from "../utils/dbCache"
 import { logout } from "../services/auth.service"
 import { supabase } from "../lib/supabaseClient"
+import { SECCIONES_INICIAL } from "../constants/preguntasInicial"
 import {
   agruparPorGrado,
   agruparPorSeccion,
@@ -209,9 +210,7 @@ export default function AdminDashboard({ nivel = "primaria" }: { nivel?: NivelDa
       const esPrimaria = ["1", "2", "3", "4", "5", "6"].includes(grado)
       const pasaGrado = gradoFiltro === "todos" || grado === String(gradoFiltro).trim()
       const pasaSeccion = seccionFiltro === "todos"
-        || (esDashboardInicial
-          ? (seccionFiltro === "ÚNICA" && seccion === "ÚNICA")
-          : seccion === seccionFiltro.toUpperCase())
+        || seccion === seccionFiltro.toUpperCase()
 
       return (esDashboardInicial ? true : esPrimaria) && pasaGrado && pasaSeccion
     })
@@ -564,10 +563,7 @@ function TablaEliminar({
       lista = lista.filter(a => a.grado === gradoFiltro)
 
     if (seccionFiltro !== "todos")
-      lista = lista.filter(a => {
-        const s = a.seccion.trim().toUpperCase()
-        return seccionFiltro === "ÚNICA" ? s === "ÚNICA" : s === seccionFiltro.toUpperCase()
-      })
+      lista = lista.filter(a => a.seccion.trim().toUpperCase() === seccionFiltro.toUpperCase())
 
     if (soloDuplicados)
       lista = lista.filter(a => duplicados.has(a.estudiante_id))
@@ -658,13 +654,9 @@ function TablaEliminar({
             className="min-w-36 border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-2.5 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer hover:border-cyan-500/30"
           >
             <option value="todos" className="bg-slate-900">Todas las secciones</option>
-            {nivel === "inicial" ? (
-              <option value="ÚNICA" className="bg-slate-900">Sección Única</option>
-            ) : (
-              ["A", "B", "C", "D", "E", "F"].map(s => (
-                <option key={s} value={s} className="bg-slate-900">Sección {s}</option>
-              ))
-            )}
+            {(nivel === "inicial" ? SECCIONES_INICIAL : ["A", "B", "C", "D", "E", "F"]).map(s => (
+              <option key={s} value={s} className="bg-slate-900">{s}</option>
+            ))}
           </select>
         </div>
 

@@ -238,60 +238,89 @@ async function exportarExcelPorGradosInicial(data: any[]) {
 
   const alumnosRiesgo = detectarAlumnosRiesgoInicial(data) as any[]
 
-  const estudianteMap = new Map<string, any>()
+  const seccionData = new Map<string, any[]>()
+  const estudianteGlobalMap = new Map<string, { seccion: string; riesgo: string }>()
   data.forEach((item: any) => {
     const id = item.estudiante_id
-    if (!id || estudianteMap.has(id)) return
+    if (!id) return
     const est = Array.isArray(item.estudiantes) ? item.estudiantes[0] : item.estudiantes
-    const infoRiesgo = alumnosRiesgo.find((a: any) => a.estudiante_id === id)
-    estudianteMap.set(id, {
-      estudiante_id: id,
-      nombres: est?.nombres || '',
-      apellidos: est?.apellidos || '',
-      estado: infoRiesgo?.estado || '✅ Bueno',
-      score: infoRiesgo?.score ?? 0,
-      riesgo: infoRiesgo?.riesgo ?? 'Bajo',
+    const seccion = (est?.seccion || '').trim()
+    if (!seccion) return
+    if (!seccionData.has(seccion)) seccionData.set(seccion, [])
+    seccionData.get(seccion)!.push(item)
+    if (!estudianteGlobalMap.has(id)) {
+      const infoRiesgo = alumnosRiesgo.find((a: any) => a.estudiante_id === id)
+      estudianteGlobalMap.set(id, {
+        seccion,
+        riesgo: infoRiesgo?.riesgo ?? 'Bajo',
+      })
+    }
+  })
+
+  const tituloSection = (s: string) => `Inicial - ${s}`
+
+  for (const [seccion, items] of seccionData) {
+    const ws = workbook.addWorksheet(tituloSection(seccion))
+    ws.mergeCells('A1:F1')
+    ws.getCell('A1').value = `REPORTE INICIAL (5 AÑOS) - ${seccion}`
+    ws.getCell('A1').font = { bold: true, size: 14, color: { argb: COLOR.blanco }, name: 'Arial' }
+    ws.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR.azulOscuro } }
+    ws.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' }
+
+    ws.addRow(['Fecha de generación', fechaHoy])
+    ws.addRow([])
+
+    const estudianteMap = new Map<string, any>()
+    items.forEach((item: any) => {
+      const id = item.estudiante_id
+      if (!id || estudianteMap.has(id)) return
+      const est = Array.isArray(item.estudiantes) ? item.estudiantes[0] : item.estudiantes
+      const infoRiesgo = alumnosRiesgo.find((a: any) => a.estudiante_id === id)
+      estudianteMap.set(id, {
+        estudiante_id: id,
+        nombres: est?.nombres || '',
+        apellidos: est?.apellidos || '',
+        score: infoRiesgo?.score ?? 0,
+        riesgo: infoRiesgo?.riesgo ?? 'Bajo',
+      })
     })
-  })
 
-  const ws = workbook.addWorksheet('Inicial - Sección Única')
-  ws.mergeCells('A1:F1')
-  ws.getCell('A1').value = 'REPORTE INICIAL (5 AÑOS)'
-  ws.getCell('A1').font = { bold: true, size: 14, color: { argb: COLOR.blanco }, name: 'Arial' }
-  ws.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR.azulOscuro } }
-  ws.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' }
+    const wsic1 = ws.getColumn(1); wsic1.width = 5
+    const wsic2 = ws.getColumn(2); wsic2.width = 26
+    const wsic3 = ws.getColumn(3); wsic3.width = 26
+    const wsic4 = ws.getColumn(4); wsic4.width = 16
+    const wsic5 = ws.getColumn(5); wsic5.width = 18
 
-  ws.addRow(['Fecha de generación', fechaHoy])
-  ws.addRow(['Total estudiantes', estudianteMap.size])
-  ws.addRow([])
-
-  const wsic1 = ws.getColumn(1); wsic1.width = 5
-  const wsic2 = ws.getColumn(2); wsic2.width = 26
-  const wsic3 = ws.getColumn(3); wsic3.width = 26
-  const wsic4 = ws.getColumn(4); wsic4.width = 16
-  const wsic5 = ws.getColumn(5); wsic5.width = 18
-  const wsic6 = ws.getColumn(6); wsic6.width = 18
-
-  const hRow = ws.addRow(['#', 'Apellidos', 'Nombres', 'Puntaje (0-20)', 'Nivel Riesgo', 'Estado'])
-  hRow.eachCell((cell) => {
-    cell.font = { bold: true, color: { argb: COLOR.blanco }, name: 'Arial', size: 11 }
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR.azulOscuro } }
-    cell.alignment = { horizontal: 'center', vertical: 'middle' }
-  })
-  ws.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
-
-  const estudiantes = Array.from(estudianteMap.values()).sort((a: any, b: any) =>
-    a.apellidos.localeCompare(b.apellidos)
-  )
-  estudiantes.forEach((est: any, i: number) => {
-    const row = ws.addRow([i + 1, est.apellidos, est.nombres, est.score, textoRiesgo(est.riesgo), est.estado])
-    const bg = colorRiesgo(est.riesgo)
-    row.eachCell((cell) => {
-      cell.font = { name: 'Arial', size: 10, color: { argb: textColorRiesgo(est.riesgo) } }
-      if (bg) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }
+    const hRow = ws.addRow(['#', 'Apellidos', 'Nombres', 'Puntaje (0-20)', 'Nivel Riesgo'])
+    hRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: COLOR.blanco }, name: 'Arial', size: 11 }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR.azulOscuro } }
       cell.alignment = { horizontal: 'center', vertical: 'middle' }
     })
-  })
+    ws.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
+
+    const estudiantes = Array.from(estudianteMap.values()).sort((a: any, b: any) =>
+      a.apellidos.localeCompare(b.apellidos)
+    )
+    estudiantes.forEach((est: any, i: number) => {
+      const row = ws.addRow([i + 1, est.apellidos, est.nombres, est.score, textoRiesgo(est.riesgo)])
+      const bg = colorRiesgo(est.riesgo)
+      row.eachCell((cell) => {
+        cell.font = { name: 'Arial', size: 10, color: { argb: textColorRiesgo(est.riesgo) } }
+        if (bg) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } }
+        cell.alignment = { horizontal: 'center', vertical: 'middle' }
+      })
+    })
+
+    ws.addRow([])
+    ws.addRow(['Total estudiantes:', estudianteMap.size])
+    const resBajo = estudiantes.filter((e: any) => e.riesgo === 'Bajo').length
+    const resMedio = estudiantes.filter((e: any) => e.riesgo === 'Medio').length
+    const resAlto = estudiantes.filter((e: any) => e.riesgo === 'Alto').length
+    ws.addRow(['Nivel Bajo:', resBajo])
+    ws.addRow(['Nivel Medio:', resMedio])
+    ws.addRow(['Nivel Alto:', resAlto])
+  }
 
   const buffer = await workbook.xlsx.writeBuffer()
   const blob = new Blob([buffer], {

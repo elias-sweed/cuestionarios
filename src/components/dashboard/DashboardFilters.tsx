@@ -1,5 +1,6 @@
 import { exportarDashboardExcel } from "../../utils/exportExcel"
 import { exportarDashboardInicialExcel } from "../../utils/exportExcelInicialDashboard"
+import { SECCIONES_INICIAL } from "../../constants/preguntasInicial"
 import { Download, Filter, Activity } from "lucide-react"
 
 interface Props {
@@ -65,13 +66,9 @@ export default function DashboardFilters({ grado, seccion, total, onGradoChange,
             className="min-w-40 border border-white/10 bg-slate-950/50 text-white rounded-2xl px-4 py-3.5 focus:bg-slate-900 focus:ring-2 focus:ring-cyan-500/50 outline-none transition-all text-sm font-bold appearance-none cursor-pointer hover:border-cyan-500/30"
           >
            <option value="todos" className="bg-slate-900">Todas las secciones</option>
-           {esInicial ? (
-                <option value="ÚNICA" className="bg-slate-900">Sección Única</option>
-           ) : (
-                ["A", "B", "C", "D", "E", "F"].map((s) => (
-                     <option key={s} value={s} className="bg-slate-900">Sección {s}</option>
-                ))
-           )}
+           {(esInicial ? SECCIONES_INICIAL : ["A", "B", "C", "D", "E", "F"]).map((s) => (
+             <option key={s} value={s} className="bg-slate-900">{s}</option>
+           ))}
           </select>
         </div>
 

@@ -29,7 +29,11 @@ export const exportarDashboardInicialExcel = async (dataFiltrada: any[]) => {
 
   ws1.addRow([])
   ws1.addRow(['Fecha de generación', fechaHoy, ''])
-  ws1.addRow(['Nivel educativo', 'Inicial (5 años) – Única sección', ''])
+  const seccionesList = [...new Set(dataFiltrada.map((item: any) => {
+    const est = Array.isArray(item.estudiantes) ? item.estudiantes[0] : item.estudiantes
+    return est?.seccion || ''
+  }).filter(Boolean))].join(', ')
+  ws1.addRow(['Nivel educativo', `Inicial (5 años) – ${seccionesList || 'Sin sección'}`, ''])
   ws1.addRow(['Total alumnos evaluados', alumnos.length, ''])
   ws1.addRow(['Total respuestas registradas', totalRespuestas, ''])
   ws1.addRow([])
